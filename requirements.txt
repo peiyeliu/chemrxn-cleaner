@@ -1,0 +1,9 @@
+rdkit-pypi>=2022.9.5
+pandas>=1.5.0
+tqdm>=4.64.0
+
+# Development & Testing
+pytest>=7.2.0
+black>=22.10.0
+isort>=5.10.0
+mypy>=1.0.0
