@@ -61,42 +61,16 @@ def test_load_ord_pb_reaction_smiles_returns_meta(monkeypatch):
     ]
 
 
-def test_extract_ord_reaction_smiles_procedure_yield(monkeypatch):
-    class DummyProduct:
-        def __init__(self, smiles: str, yield_value: float | None):
-            self.smiles = smiles
-            self.yield_value = yield_value
-
-    class DummyOutcome:
-        def __init__(self, products):
-            self.products = products
-
+def test_load_ord_pb_reaction_smiles_applies_meta_extractor(monkeypatch):
     class DummyReaction:
-        def __init__(self, reaction_id, smiles, outcomes, flat):
+        def __init__(self, reaction_id: str, smiles: str):
             self.reaction_id = reaction_id
             self.smiles = smiles
-            self.outcomes = outcomes
-            self.flat = flat
 
     dummy_dataset = types.SimpleNamespace(
         reactions=[
-            DummyReaction(
-                "rxn-42",
-                "SMI",
-                [
-                    DummyOutcome(
-                        [
-                            DummyProduct("P1", 90.0),
-                            DummyProduct("P2", None),
-                        ]
-                    )
-                ],
-                {
-                    "setup.temperature": 298,
-                    "conditions.time": 5,
-                    "other.field": "skip",
-                },
-            )
+            DummyReaction("rxn-1", "A>B>C"),
+            DummyReaction("", "D>E>F"),
         ]
     )
 
@@ -106,35 +80,17 @@ def test_extract_ord_reaction_smiles_procedure_yield(monkeypatch):
     def fake_get_reaction_smiles(message, **kwargs):
         return message.smiles
 
-    def fake_smiles_from_compound(product, canonical=True):
-        return product.smiles
-
-    def fake_get_product_yield(product, as_measurement=False):
-        return product.yield_value
-
-    def fake_message_to_row(rxn):
-        return rxn.flat
-
     monkeypatch.setattr(loader, "load_message", fake_load_message)
     monkeypatch.setattr(loader, "get_reaction_smiles", fake_get_reaction_smiles)
-    monkeypatch.setattr(loader, "smiles_from_compound", fake_smiles_from_compound)
-    monkeypatch.setattr(loader, "get_product_yield", fake_get_product_yield)
-    monkeypatch.setattr(loader, "message_to_row", fake_message_to_row)
 
-    reactions = loader.extract_ord_reaction_smiles_procedure_yield("dummy.pb")
+    def meta_extractor(reaction):
+        return {"extra": f"meta-{reaction.smiles}"}
+
+    reactions = loader.load_ord_pb_reaction_smiles(
+        "dummy.pb", meta_extractor=meta_extractor
+    )
 
     assert reactions == [
-        (
-            "SMI",
-            {
-                "reaction_id": "rxn-42",
-                "procedure": {
-                    "setup.temperature": 298,
-                    "conditions.time": 5,
-                },
-                "yields": [
-                    {"product_smiles": "P1", "yield_percent": 90.0},
-                ],
-            },
-        )
+        ("A>B>C", {"reaction_id": "rxn-1", "reaction_index": 0, "extra": "meta-A>B>C"}),
+        ("D>E>F", {"reaction_index": 1, "extra": "meta-D>E>F"}),
     ]

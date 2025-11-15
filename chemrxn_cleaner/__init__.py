@@ -19,8 +19,8 @@ from .cleaning import (
 from .loader import (
     load_uspto_rsmi,
     load_ord_pb_reaction_smiles,
-    extract_ord_reaction_smiles_procedure_yield,
 )
+from .extractor import ord_procedure_yields_meta
 
 __all__ = [
     # types
@@ -43,5 +43,6 @@ __all__ = [
     # io
     "load_uspto_rsmi",
     "load_ord_pb_reaction_smiles",
-    "extract_ord_reaction_smiles_procedure_yield",
+    # extractor
+    "ord_procedure_yields_meta",
 ]

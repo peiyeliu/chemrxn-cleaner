@@ -13,7 +13,7 @@ authors = [
 ]
 license = {text = "MIT"}
 dependencies = [
-    "rdkit-pypi>=2022.9.5",
+    "rdkit-pypi",
     "pandas>=1.5.0",
     "tqdm>=4.64.0",
 ]
