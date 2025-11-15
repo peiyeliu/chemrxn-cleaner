@@ -7,14 +7,11 @@ A lightweight toolkit for cleaning and standardizing organic reaction datasets f
 - Python 3.9+
 - [RDKit](https://www.rdkit.org/) (installable from `rdkit-pypi` on PyPI)
 - Basic scientific Python stack (`pandas`, `tqdm`) — installed automatically via `pip install chemrxn-cleaner`
-- Optional: `ord-schema` for loading Open Reaction Database datasets (`pip install chemrxn-cleaner[ord]`)
 
 ## Installation
 
 ```bash
 pip install chemrxn-cleaner
-# or from source
-pip install -e .
 ```
 
 ## Quick Start
