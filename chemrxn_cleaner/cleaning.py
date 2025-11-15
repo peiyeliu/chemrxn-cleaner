@@ -1,70 +1,145 @@
 # chemrxn_cleaner/cleaning.py
 
-from dataclasses import dataclass
-from typing import Callable, List
+from __future__ import annotations
 
-from rdkit import Chem
+from typing import Iterable, List, Optional, Tuple, Dict, Any
 
-from .parsing import parse_reaction_smiles
-
-
-@dataclass
-class ReactionRecord:
-    raw: str
-    reactants: List[str]
-    reagents: List[str]
-    products: List[str]
-
-
-FilterFunc = Callable[[ReactionRecord], bool]
-
-
-def is_valid_smiles(smiles: str) -> bool:
-    """Return True if SMILES can be parsed by RDKit."""
-    mol = Chem.MolFromSmiles(smiles)
-    return mol is not None
-
-
-def default_valid_molecule_filter(smiles: str) -> bool:
-    """Basic sanity check on a single molecule."""
-    if not smiles:
-        return False
-    if not is_valid_smiles(smiles):
-        return False
-    # 简单长度限制，太长的分子先过滤掉（后面可以调参/改规则）
-    if len(smiles) > 256:
-        return False
-    return True
-
-
-def has_product_filter(record: ReactionRecord) -> bool:
-    """Filter out reactions without products."""
-    return len(record.products) > 0
-
-
-def all_molecules_valid_filter(record: ReactionRecord) -> bool:
-    """Filter out reactions with invalid SMILES."""
-    all_smiles = record.reactants + record.reagents + record.products
-    return all(default_valid_molecule_filter(s) for s in all_smiles)
+from .types import ReactionRecord
+from .parsing import parse_reaction_smiles, canonicalize_reaction
+from .filters import ReactionFilter, default_filters
 
 
 def clean_reactions(
-    rxn_smiles_list: List[str],
-    filters: List[FilterFunc] | None = None,
+    rxn_smiles_list: Iterable[Tuple[str, Dict[str, Any]]],
+    filters: Optional[List[ReactionFilter]] = None,
+    drop_failed_parse: bool = True,
+    strict: bool = True,
 ) -> List[ReactionRecord]:
-    """Apply parsing + filters to a list of reaction SMILES."""
-    filters = filters or [has_product_filter, all_molecules_valid_filter]
+    """
+    Parse and clean a list of reaction SMILES.
+
+    This is the core entry point for the cleaning pipeline.
+
+    Args:
+        rxn_smiles_list:
+            An iterable of (reaction_smiles, meta_dict) tuples.
+
+        filters:
+            A list of predicate functions. Each filter takes a ReactionRecord and
+            returns True if the reaction should be kept, False otherwise.
+            If None, uses `default_filters()`.
+
+        drop_failed_parse:
+            - If True: silently drop reactions that cannot be parsed.
+            - If False: re-raise the exception from parsing.
+
+        strict:
+            Passed to `parse_reaction_smiles`:
+            - True: require exactly 3 parts ('reactants>reagents>products').
+            - False: auto-pad/truncate to 3 parts.
+
+    Returns:
+        A list of cleaned ReactionRecord objects which passed all filters.
+    """
+    if filters is None:
+        filters = default_filters()
 
     cleaned: List[ReactionRecord] = []
-    for rxn in rxn_smiles_list:
-        try:
-            parsed = parse_reaction_smiles(rxn)
-            record = ReactionRecord(raw=rxn, **parsed)
-        except Exception:
-            # 无法解析的直接丢弃
-            continue
 
-        if all(f(record) for f in filters):
+    for rxn_entry in rxn_smiles_list:
+        if rxn_entry is None:
+            continue
+        rxn, meta = rxn_entry
+        if rxn is None:
+            continue
+        if meta is None:
+            meta = {}
+
+        try:
+            record = parse_reaction_smiles(rxn, strict=strict)
+        except Exception:
+            if drop_failed_parse:
+                continue
+            else:
+                raise
+        record.meta = meta
+
+        keep = True
+        for f in filters:
+            if not f(record):
+                keep = False
+                break
+
+        if keep:
             cleaned.append(record)
 
     return cleaned
+
+
+def clean_and_canonicalize(
+    rxn_smiles_list: Iterable[Tuple[str, Dict[str, Any]]],
+    filters: Optional[List[ReactionFilter]] = None,
+    drop_failed_parse: bool = True,
+    strict: bool = True,
+    isomeric: bool = True,
+) -> List[ReactionRecord]:
+    """
+    Clean reactions and canonicalize all SMILES in one pass.
+
+    This is a convenience wrapper around `clean_reactions` + `canonicalize_reaction`.
+
+    Args:
+        rxn_smiles_list:
+            Iterable of (reaction_smiles, meta_dict) pairs.
+
+        filters:
+            List of ReactionFilter predicates. If None, uses default_filters().
+
+        drop_failed_parse:
+            Whether to silently drop unparseable reactions.
+
+        strict:
+            Whether to enforce exactly three '>' parts in reaction SMILES.
+
+        isomeric:
+            Whether to keep isomeric SMILES when canonicalizing.
+
+    Returns:
+        List[ReactionRecord] with canonicalized reactants/reagents/products.
+    """
+    cleaned = clean_reactions(
+        rxn_smiles_list=rxn_smiles_list,
+        filters=filters,
+        drop_failed_parse=drop_failed_parse,
+        strict=strict,
+    )
+
+    canon_records: List[ReactionRecord] = []
+    for rec in cleaned:
+        canon_records.append(canonicalize_reaction(rec, isomeric=isomeric))
+
+    return canon_records
+
+
+def basic_cleaning_pipeline(
+    rxn_smiles_list: Iterable[Tuple[str, Dict[str, Any]]],
+) -> List[ReactionRecord]:
+    """
+    A simple out-of-the-box cleaning pipeline.
+
+    Equivalent to:
+        clean_and_canonicalize(
+            rxn_smiles_list,
+            filters=default_filters(),
+            drop_failed_parse=True,
+            strict=True,
+            isomeric=True,
+        )
+    """
+    return clean_and_canonicalize(
+        rxn_smiles_list=rxn_smiles_list,
+        filters=default_filters(),
+        drop_failed_parse=True,
+        strict=True,
+        isomeric=True,
+    )
