@@ -7,7 +7,7 @@ from .filters import (
     has_product,
     all_molecules_valid,
     max_smiles_length,
-    allowed_elements,
+    element_filter,
     meta_filter,
     default_filters,
 )
@@ -33,7 +33,7 @@ __all__ = [
     "has_product",
     "all_molecules_valid",
     "max_smiles_length",
-    "allowed_elements",
+    "element_filter",
     "meta_filter",
     "default_filters",
     # cleaning

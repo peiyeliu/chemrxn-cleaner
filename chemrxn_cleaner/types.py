@@ -37,3 +37,9 @@ class ReactionRecord:
             meta=data.get("meta"),
         )
     
+
+@dataclass
+class ElementFilterRule:
+    reactantElements: List[str]
+    reagentElements: List[str]
+    productElements: List[str]

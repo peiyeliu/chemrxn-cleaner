@@ -6,9 +6,11 @@ from typing import Callable, Iterable, List, Set, Dict, Any
 
 from rdkit import Chem
 
-from .types import ReactionRecord
+from .types import ReactionRecord, ElementFilterRule
 
 ReactionFilter = Callable[[ReactionRecord], bool]
+
+_PERIODIC_TABLE = Chem.GetPeriodicTable()
 
 
 # ---------------------- tool functions ---------------------- #
@@ -26,6 +28,25 @@ def _is_valid_smiles(smiles: str) -> bool:
         return False
     mol = Chem.MolFromSmiles(smiles)
     return mol is not None
+
+
+def _normalize_element_list(elements: Iterable[str] | None) -> Set[str] | None:
+    """Return a set of elements, or None when no restriction is specified."""
+    if not elements:
+        return None
+    normalized: Set[str] = set()
+    for element in elements:
+        if element is None:
+            raise ValueError("Element entries must be strings.")
+        symbol = element.strip()
+        if not symbol:
+            raise ValueError("Element symbol cannot be empty.")
+        try:
+            atomic_number = _PERIODIC_TABLE.GetAtomicNumber(symbol)
+        except Exception as exc:
+            raise ValueError(f"Invalid element symbol: {element!r}") from exc
+        normalized.add(_PERIODIC_TABLE.GetElementSymbol(atomic_number))
+    return normalized
 
 
 # ---------------------- basic filter ---------------------- #
@@ -63,23 +84,64 @@ def max_smiles_length(max_len: int) -> ReactionFilter:
     return _filter
 
 
-def allowed_elements(whitelist: Set[str]) -> ReactionFilter:
+def element_filter(
+    allowList: ElementFilterRule | None = None,
+    forbidList: ElementFilterRule | None = None,
+) -> ReactionFilter:
     """
-    Return a filter function that keeps only reactions where every atom in
-    every molecule is in the given `whitelist` of element symbols.
+    Build a ReactionFilter that enforces per-role element rules.
+
+    For each reactant, reagent, and product molecule, the generated filter
+    ensures: (1) the SMILES string is parseable by RDKit, (2) every atom's
+    symbol appears in the corresponding `allowList` set (when provided), and (3)
+    no atom's symbol appears in the matching `forbidList` set (when provided).
+    The reaction is rejected as soon as any molecule violates those
+    constraints. Omitting either rule disables that portion of the filter.
     """
 
-    def _filter(record: ReactionRecord) -> bool:
-        for s in _iter_all_smiles(record):
-            if not s:
-                return False
-            mol = Chem.MolFromSmiles(s)
+    allowed_reactants = _normalize_element_list(
+        allowList.reactantElements if allowList else None
+    )
+    allowed_reagents = _normalize_element_list(
+        allowList.reagentElements if allowList else None
+    )
+    allowed_products = _normalize_element_list(
+        allowList.productElements if allowList else None
+    )
+
+    forbidden_reactants = _normalize_element_list(
+        forbidList.reactantElements if forbidList else None
+    )
+    forbidden_reagents = _normalize_element_list(
+        forbidList.reagentElements if forbidList else None
+    )
+    forbidden_products = _normalize_element_list(
+        forbidList.productElements if forbidList else None
+    )
+
+    def _check_molecules(
+        smiles_list: Iterable[str],
+        allowed: Set[str] | None,
+        forbidden: Set[str] | None,
+    ) -> bool:
+        for smile in smiles_list:
+            mol = Chem.MolFromSmiles(smile)
             if mol is None:
                 return False
             for atom in mol.GetAtoms():
-                if atom.GetSymbol() not in whitelist:
+                symbol = atom.GetSymbol()
+                if allowed is not None and symbol not in allowed:
+                    return False
+                if forbidden is not None and symbol in forbidden:
                     return False
         return True
+
+    def _filter(record: ReactionRecord) -> bool:
+        return (
+            _check_molecules(record.reactants, allowed_reactants, forbidden_reactants)
+            and _check_molecules(record.reagents, allowed_reagents, forbidden_reagents)
+            and _check_molecules(record.products, allowed_products, forbidden_products)
+        )
 
     return _filter
 
