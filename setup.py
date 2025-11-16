@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="chemrxn-cleaner",
-    version="0.0.1",
+    version="0.0.2",
     description="A lightweight toolkit for cleaning and standardizing organic reaction datasets.",
     author="Peiye Liu",
     author_email="peiyeliu.work@outlook.com",
@@ -11,7 +11,7 @@ setup(
     packages=find_packages(exclude=("tests", "examples")),
     python_requires=">=3.9",
     install_requires=[
-        "rdkit-pypi>=2022.9.5",
+        "rdkit-pypi",
         "pandas>=1.5.0",
         "tqdm>=4.64.0",
     ],
