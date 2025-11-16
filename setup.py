@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="chemrxn-cleaner",
-    version="0.0.2",
+    version="0.0.3",
     description="A lightweight toolkit for cleaning and standardizing organic reaction datasets.",
     author="Peiye Liu",
     author_email="peiyeliu.work@outlook.com",
