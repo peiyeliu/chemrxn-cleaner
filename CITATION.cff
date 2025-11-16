@@ -1,0 +1,15 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "chemrxn-cleaner"
+abstract: "A lightweight toolkit for loading, cleaning, and standardizing organic reaction datasets before machine-learning or analytics workflows."
+authors:
+  - family-names: Liu
+    given-names: Peiye
+    email: peiyeliu.work@outlook.com
+license: MIT
+repository-code: "https://github.com/peiyeliu/chemrxn-cleaner"
+version: "0.0.4"
+keywords:
+  - chemistry
+  - cheminformatics
+  - machine-learning
