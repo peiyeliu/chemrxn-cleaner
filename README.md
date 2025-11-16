@@ -4,9 +4,7 @@ A lightweight toolkit for loading, cleaning, and standardizing organic reaction 
 
 ## Prerequisites
 
-- Python 3.9–3.10 (Python 3.12+ currently has rdkit compatibility issues)
-- [RDKit](https://www.rdkit.org/) (installable from `rdkit-pypi` on PyPI)
-- Open Reaction Database schema utilities: `pip install ord-schema`
+- Python 3.9+
 
 These dependencies are pulled in automatically when installing `chemrxn-cleaner`, with the exception of platform-specific RDKit wheels.
 

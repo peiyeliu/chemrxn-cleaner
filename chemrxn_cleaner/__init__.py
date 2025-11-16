@@ -1,5 +1,8 @@
 # chemrxn_cleaner/__init__.py
 
+
+__version__ = "0.0.3.dev"
+
 from .types import ReactionRecord
 from .parsing import parse_reaction_smiles, canonicalize_reaction
 from .filters import (
