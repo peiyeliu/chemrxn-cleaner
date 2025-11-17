@@ -15,13 +15,13 @@ from chemrxn_cleaner.reporting import summarize_cleaning
 from chemrxn_cleaner.types import ElementFilterRule
 
 # read uspto data from your local environment
-rxn_uspto = load_uspto_rsmi("/your_data_path/1976_Sep2016_USPTOgrants_smiles.rsmi")
-cleaned_rxn_uspto = clean_reactions(rxn_smiles_list=rxn_uspto, filters=[])
-clearning_report_uspto = summarize_cleaning(raw_reactions=rxn_uspto, cleaned_reactions=cleaned_rxn_uspto)
+# rxn_uspto = load_uspto_rsmi("/your_data_path/1976_Sep2016_USPTOgrants_smiles.rsmi")
+# cleaned_rxn_uspto = clean_reactions(rxn_smiles_list=rxn_uspto, filters=[])
+# clearning_report_uspto = summarize_cleaning(raw_reactions=rxn_uspto, cleaned_reactions=cleaned_rxn_uspto)
 
 
 # read ORD (Open Reaction Database) data from your local environment
-rxn_ord = load_ord_pb_reaction_smiles("/your_data_path/ord_dataset-example.pb.gz",
+rxn_ord = load_ord_pb_reaction_smiles("/home/pyl/datasets/ord-data/data/00/ord_dataset-00005539a1e04c809a9a78647bea649c.pb.gz",
                                       meta_extractor=ord_procedure_yields_meta)
 cleaned_rxn_ord = clean_reactions(rxn_smiles_list=rxn_ord, filters=[
     max_smiles_length(100),
@@ -31,6 +31,8 @@ cleaned_rxn_ord = clean_reactions(rxn_smiles_list=rxn_ord, filters=[
 ])
 report_ord = summarize_cleaning(raw_reactions=rxn_ord, cleaned_reactions=cleaned_rxn_ord)
 
+img = cleaned_rxn_ord[0].show()
+print(type(img))
 # export results
-with open('output.txt', 'w') as f:
-    json.dump([rec.to_dict() for rec in cleaned_rxn_ord], f, indent=4) 
+# with open('output.txt', 'w') as f:
+#     json.dump([rec.to_dict() for rec in cleaned_rxn_ord], f, indent=4) 

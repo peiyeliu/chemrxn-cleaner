@@ -37,6 +37,60 @@ class ReactionRecord:
             meta=data.get("meta"),
         )
     
+    def show(
+        self,
+        size: tuple[int, int] = (2400, 600),
+        jupyter: bool = True,
+        with_meta: bool = True,
+    ):
+        from rdkit.Chem import Draw, rdChemReactions
+        from rdkit import Chem
+
+        rxn_smiles = (self.raw)
+
+        rxn = rdChemReactions.ReactionFromSmarts(
+            rxn_smiles,
+            useSmiles=True
+        )
+
+        img = Draw.ReactionToImage(
+            rxn,
+            subImgSize=(size[0] // 3, size[1]) 
+        )
+
+        if jupyter:
+            try:
+                from IPython.display import display, HTML
+            except ImportError:  # pragma: no cover - optional dependency
+                jupyter = False
+            else:
+                display(img)
+                if with_meta and self.meta:
+                    rows = "".join(
+                        f"<tr><th>{k}</th><td>{v}</td></tr>"
+                        for k, v in self.meta.items()
+                    )
+                    display(HTML(
+                        "<table border='1' style='border-collapse:collapse;'>"
+                        f"{rows}</table>"
+                    ))
+
+        if not jupyter:
+            try:
+                img.show()
+            except Exception as exc:  # pragma: no cover - environment specific
+                print(
+                    "Unable to open the image viewer."
+                    " Consider running in a Jupyter environment."
+                )
+                print(f"Original error: {exc}")
+            if with_meta and self.meta:
+                print("Metadata:")
+                for k, v in self.meta.items():
+                    print(f"  {k}: {v}")
+
+        return img 
+    
 
 @dataclass
 class ElementFilterRule:
