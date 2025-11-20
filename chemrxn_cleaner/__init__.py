@@ -25,6 +25,15 @@ from .loader import (
 )
 from .extractor import ord_procedure_yields_meta
 
+from .similarity import similarity_filter
+
+from .io import (
+    export_reaction_records_to_json,
+    load_reaction_records_from_json,
+    export_reaction_records_to_csv,
+    load_reaction_records_from_csv,
+)
+
 __all__ = [
     # types
     "ReactionRecord",
@@ -39,6 +48,7 @@ __all__ = [
     "element_filter",
     "meta_filter",
     "default_filters",
+    "similarity_filter",
     # cleaning
     "clean_reactions",
     "clean_and_canonicalize",
@@ -46,6 +56,10 @@ __all__ = [
     # io
     "load_uspto_rsmi",
     "load_ord_pb_reaction_smiles",
+    "export_reaction_records_to_json",
+    "load_reaction_records_from_json",
+    "export_reaction_records_to_csv",
+    "load_reaction_records_from_csv",
     # extractor
     "ord_procedure_yields_meta",
 ]
