@@ -21,6 +21,7 @@ from .cleaning import (
 )
 from .loader import (
     load_uspto_rsmi,
+    load_csv_reaction_smiles,
     load_ord_pb_reaction_smiles,
 )
 from .extractor import ord_procedure_yields_meta
@@ -55,6 +56,7 @@ __all__ = [
     "basic_cleaning_pipeline",
     # io
     "load_uspto_rsmi",
+    "load_csv_reaction_smiles",
     "load_ord_pb_reaction_smiles",
     "export_reaction_records_to_json",
     "load_reaction_records_from_json",

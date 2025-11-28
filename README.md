@@ -33,10 +33,29 @@ ChemRxn-Cleaner aims to make cleaning reproducible. A typical workflow has five 
 ### 1. Loading Reaction Data
 
 ```python
-from chemrxn_cleaner.loader import load_uspto_rsmi, load_ord_pb_reaction_smiles
+from chemrxn_cleaner.loader import (
+    load_uspto_rsmi,
+    load_csv_reaction_smiles,
+    load_ord_pb_reaction_smiles,
+)
 
 # USPTO .rsmi loader (metadata fields stored in meta["fields"])
 uspto_rxns = load_uspto_rsmi("data/uspto_sample.rsmi", keep_meta=True)
+
+# CSV loader: choose which columns hold reactants/reagents/products
+csv_rxns = load_csv_reaction_smiles(
+    "data/reactions.csv",
+    reactant_columns=["reactant_a", "reactant_b"],
+    reagent_columns=["catalyst"],
+    product_columns=["product"],
+    # meta_columns is optional; if omitted, all other columns are included
+)
+
+# CSV loader with pre-built reaction SMILES column
+csv_rxns_prebuilt = load_csv_reaction_smiles(
+    "data/reactions.csv",
+    reaction_smiles_column="rxn_smiles",
+)
 
 # ORD dataset loader with optional metadata extraction
 from chemrxn_cleaner.extractor import ord_procedure_yields_meta
