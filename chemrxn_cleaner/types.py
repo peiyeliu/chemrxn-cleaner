@@ -42,9 +42,9 @@ class ReactionRecord:
         size: tuple[int, int] = (2400, 600),
         jupyter: bool = True,
         with_meta: bool = True,
+        show_atom_map_numbers: bool = False,
     ):
         from rdkit.Chem import Draw, rdChemReactions
-        from rdkit import Chem
 
         rxn_smiles = (self.raw)
 
@@ -52,6 +52,17 @@ class ReactionRecord:
             rxn_smiles,
             useSmiles=True
         )
+
+        if not show_atom_map_numbers:
+            # Remove atom-map numbers to avoid numbered atom labels in depictions.
+            for mol in (
+                list(rxn.GetReactants())
+                + list(rxn.GetProducts())
+                + list(rxn.GetAgents())
+            ):
+                for atom in mol.GetAtoms():
+                    if atom.HasProp("molAtomMapNumber"):
+                        atom.ClearProp("molAtomMapNumber")
 
         img = Draw.ReactionToImage(
             rxn,
