@@ -19,11 +19,10 @@ from .cleaning import (
     clean_and_canonicalize,
     basic_cleaning_pipeline,
 )
-from .loader import (
-    load_uspto_rsmi,
-    load_csv_reaction_smiles,
-    load_json_reaction_smiles,
-    load_ord_pb_reaction_smiles,
+from .loader_registry import (
+    register_input_format,
+    get_input_format,
+    load_reactions,
 )
 from .extractor import ord_procedure_yields_meta
 
@@ -56,10 +55,9 @@ __all__ = [
     "clean_and_canonicalize",
     "basic_cleaning_pipeline",
     # io
-    "load_uspto_rsmi",
-    "load_csv_reaction_smiles",
-    "load_json_reaction_smiles",
-    "load_ord_pb_reaction_smiles",
+    "register_input_format",
+    "get_input_format",
+    "load_reactions",
     "export_reaction_records_to_json",
     "load_reaction_records_from_json",
     "export_reaction_records_to_csv",
