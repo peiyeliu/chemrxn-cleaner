@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 import csv
+import json
 
 from typing import Callable, List, Dict, Any, Optional, Tuple, Sequence
 
@@ -47,6 +48,55 @@ def load_uspto_rsmi(
             reactions_with_meta.append((rxn_smiles, meta))
 
     return reactions_with_meta
+
+
+def load_ord_pb_reaction_smiles(
+    path: str,
+    generate_if_missing: bool = True,
+    allow_incomplete: bool = True,
+    canonical: bool = True,
+    meta_extractor: Optional[Callable[[dataset_pb2.Reaction], Dict[str, Any]]] = None,
+) -> List[Tuple[str, Dict[str, Any]]]:
+    """
+    Load an ORD *.pb or *.pb.gz file and extract reaction SMILES.
+
+    Args:
+        path: Path to the ORD dataset file (e.g. 'data-00001.pb.gz').
+        generate_if_missing:
+            If True, generate reaction SMILES from inputs/outcomes when missing.
+        allow_incomplete:
+            If True, allow reactions with incomplete information when generating SMILES.
+        canonical:
+            If True, return canonical reaction SMILES.
+
+    Returns:
+        A list of (reaction_smiles, meta_dict) tuples.
+    """
+    dataset = load_message(path, dataset_pb2.Dataset)
+    rxn_smiles_list: List[Tuple[str, Dict[str, Any]]] = []
+
+    for idx, rxn in enumerate(dataset.reactions):
+        smi: Optional[str] = get_reaction_smiles(
+            message=rxn,
+            generate_if_missing=generate_if_missing,
+            allow_incomplete=allow_incomplete,
+            canonical=canonical,
+        )
+        if smi:
+            meta: Dict[str, Any] = {}
+            if rxn.reaction_id:
+                meta["reaction_id"] = rxn.reaction_id
+            meta["reaction_index"] = idx
+
+            if meta_extractor is not None:
+                extra_meta = meta_extractor(rxn)
+                if extra_meta:
+                    meta.update(extra_meta)
+
+            rxn_smiles_list.append((smi, meta))
+
+    return rxn_smiles_list
+
 
 
 def load_csv_reaction_smiles(
@@ -162,49 +212,39 @@ def load_csv_reaction_smiles(
     return reactions
 
 
-def load_ord_pb_reaction_smiles(
+def load_json_reaction_smiles(
     path: str,
-    generate_if_missing: bool = True,
-    allow_incomplete: bool = True,
-    canonical: bool = True,
-    meta_extractor: Optional[Callable[[dataset_pb2.Reaction], Dict[str, Any]]] = None,
+    mapper: Callable[[Any], Optional[Tuple[str, Dict[str, Any]]]],
 ) -> List[Tuple[str, Dict[str, Any]]]:
     """
-    Load an ORD *.pb or *.pb.gz file and extract reaction SMILES.
+    Load reaction SMILES from a JSON file using a user-provided mapper.
 
-    Args:
-        path: Path to the ORD dataset file (e.g. 'data-00001.pb.gz').
-        generate_if_missing:
-            If True, generate reaction SMILES from inputs/outcomes when missing.
-        allow_incomplete:
-            If True, allow reactions with incomplete information when generating SMILES.
-        canonical:
-            If True, return canonical reaction SMILES.
-
-    Returns:
-        A list of (reaction_smiles, meta_dict) tuples.
+    The JSON payload is expected to be a list; each entry is passed to
+    ``mapper`` which should return ``(reaction_smiles, meta_dict)`` or ``None``
+    to skip the entry.
     """
-    dataset = load_message(path, dataset_pb2.Dataset)
-    rxn_smiles_list: List[Tuple[str, Dict[str, Any]]] = []
+    with open(path, "r", encoding="utf-8") as f:
+        payload = json.load(f)
 
-    for idx, rxn in enumerate(dataset.reactions):
-        smi: Optional[str] = get_reaction_smiles(
-            message=rxn,
-            generate_if_missing=generate_if_missing,
-            allow_incomplete=allow_incomplete,
-            canonical=canonical,
-        )
-        if smi:
-            meta: Dict[str, Any] = {}
-            if rxn.reaction_id:
-                meta["reaction_id"] = rxn.reaction_id
-            meta["reaction_index"] = idx
+    if not isinstance(payload, list):
+        raise ValueError("JSON payload must be a list.")
 
-            if meta_extractor is not None:
-                extra_meta = meta_extractor(rxn)
-                if extra_meta:
-                    meta.update(extra_meta)
+    reactions: List[Tuple[str, Dict[str, Any]]] = []
+    for idx, item in enumerate(payload):
+        mapped = mapper(item)
+        if mapped is None:
+            continue
+        if not (isinstance(mapped, (tuple, list)) and len(mapped) == 2):
+            raise ValueError(
+                f"Mapper must return (reaction_smiles, meta_dict); got {mapped!r} at index {idx}"
+            )
+        rxn_smiles, meta = mapped
+        if not isinstance(rxn_smiles, str) or not rxn_smiles.strip():
+            raise ValueError(f"Mapper must return a non-empty reaction_smiles at index {idx}")
+        if meta is None:
+            meta = {}
+        if not isinstance(meta, dict):
+            raise ValueError(f"Mapper must return dict metadata at index {idx}, got {type(meta)!r}")
+        reactions.append((rxn_smiles.strip(), meta))
 
-            rxn_smiles_list.append((smi, meta))
-
-    return rxn_smiles_list
+    return reactions

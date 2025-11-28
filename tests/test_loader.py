@@ -87,6 +87,27 @@ def test_load_csv_reaction_smiles_combined_column(tmp_path):
     assert reactions == [("A.B>C>D", {"tag": "batch"})]
 
 
+def test_load_json_reaction_smiles_with_mapper(tmp_path):
+    payload = [
+        {"reactants": "A.B", "products": "C", "meta": {"id": 1}},
+        {"skip": True},
+    ]
+    path = tmp_path / "rxns.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    def mapper(entry):
+        if entry.get("skip"):
+            return None
+        return (
+            f"{entry['reactants']}>>{entry['products']}",
+            {"id": entry["meta"]["id"]},
+        )
+
+    reactions = loader.load_json_reaction_smiles(str(path), mapper)
+
+    assert reactions == [("A.B>>C", {"id": 1})]
+
+
 def test_load_ord_pb_reaction_smiles_returns_meta(monkeypatch):
     class DummyReaction:
         def __init__(self, reaction_id: str, smiles: str):
