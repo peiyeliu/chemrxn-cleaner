@@ -1,4 +1,4 @@
-# io_registry.py
+# chemrxn_cleaner/io/loader_registry.py
 from __future__ import annotations
 
 from typing import (
@@ -146,7 +146,7 @@ def load_reactions(
 def _register_builtin_formats() -> None:
     """
     Register built-in input formats when the package is imported.
-    Can be called in __init__.py: io_registry._register_builtin_formats()
+    Can be called in __init__.py: loader_registry._register_builtin_formats()
     """
     from .loader import load_uspto_rsmi, load_ord_pb_reaction_smiles, load_csv_reaction_smiles, load_json_reaction_smiles
 

@@ -2,7 +2,7 @@ import types
 
 import pytest
 
-from chemrxn_cleaner import loader
+from chemrxn_cleaner.io import loader
 
 
 def test_load_uspto_rsmi_without_meta(tmp_path):

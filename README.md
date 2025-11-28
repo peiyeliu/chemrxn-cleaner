@@ -33,7 +33,7 @@ ChemRxn-Cleaner aims to make cleaning reproducible. A typical workflow has five 
 ### 1. Loading Reaction Data
 
 ```python
-from chemrxn_cleaner.loader import (
+from chemrxn_cleaner.io.loader import (
     load_uspto_rsmi,
     load_csv_reaction_smiles,
     load_ord_pb_reaction_smiles,
@@ -150,7 +150,7 @@ with open("cleaned_ord.jsonl", "w", encoding="utf-8") as f:
 ## Quick Start
 
 ```python
-from chemrxn_cleaner.loader import load_uspto_rsmi
+from chemrxn_cleaner.io.loader import load_uspto_rsmi
 from chemrxn_cleaner import basic_cleaning_pipeline, reporting
 
 rxns = load_uspto_rsmi("/path/to/file.rsmi", keep_meta=True)

@@ -6,16 +6,12 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Iterable, List, Literal, Union
 
-
 from rdkit import Chem
 from rdkit.Chem import AllChem
 from rdkit import DataStructs
 
-from .filters import ReactionFilter
-from .types import ReactionRecord
-
-
-
+from ..filters import ReactionFilter
+from ..types import ReactionRecord
 
 
 @dataclass(frozen=True)

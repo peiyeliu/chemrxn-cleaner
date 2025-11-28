@@ -3,6 +3,8 @@
 
 __version__ = "0.0.4"
 
+import sys
+
 from .types import ReactionRecord
 from .parsing import parse_reaction_smiles, canonicalize_reaction
 from .filters import (
@@ -19,21 +21,18 @@ from .cleaning import (
     clean_and_canonicalize,
     basic_cleaning_pipeline,
 )
-from .loader_registry import (
+from .io import (
     register_input_format,
     get_input_format,
     load_reactions,
+    export_reaction_records_to_json,
+    export_reaction_records_to_csv,
 )
+from .io import loader, loader_registry
 from .extractor import ord_procedure_yields_meta
 
-from .similarity import similarity_filter
-
-from .io import (
-    export_reaction_records_to_json,
-    load_reaction_records_from_json,
-    export_reaction_records_to_csv,
-    load_reaction_records_from_csv,
-)
+from .utils import similarity_filter
+from .utils import similarity as _similarity
 
 __all__ = [
     # types
@@ -59,9 +58,12 @@ __all__ = [
     "get_input_format",
     "load_reactions",
     "export_reaction_records_to_json",
-    "load_reaction_records_from_json",
     "export_reaction_records_to_csv",
-    "load_reaction_records_from_csv",
     # extractor
     "ord_procedure_yields_meta",
 ]
+
+# Backward-compatible aliases for relocated submodules
+sys.modules[__name__ + ".loader"] = loader
+sys.modules[__name__ + ".loader_registry"] = loader_registry
+sys.modules[__name__ + ".similarity"] = _similarity
