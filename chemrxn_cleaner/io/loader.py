@@ -54,7 +54,7 @@ def load_uspto(
             record = parse_reaction_smiles(rxn_smiles, strict=False)
             record.reaction_smiles = rxn_smiles
             record.source = "uspto"
-            record.source_ref = path
+            record.source_file_path = path
 
             if keep_meta and len(parts) > 1:
                 record.extra_metadata["fields"] = parts[1:]
@@ -333,8 +333,8 @@ def load_csv(
             record.reaction_smiles = rxn_smiles
             if not record.source:
                 record.source = "csv"
-            if record.source_ref is None:
-                record.source_ref = path
+
+            record.source_file_path = path
 
             if mapper is not None:
                 mapped = mapper(record, row)
