@@ -1,4 +1,4 @@
-from chemrxn_cleaner.reporting import summarize_cleaning
+from chemrxn_cleaner.reporter import summarize_cleaning
 from chemrxn_cleaner.types import ReactionRecord
 
 

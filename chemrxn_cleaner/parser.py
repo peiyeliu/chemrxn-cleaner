@@ -1,4 +1,4 @@
-# chemrxn_cleaner/parsing.py
+# chemrxn_cleaner/parser.py
 
 from __future__ import annotations
 

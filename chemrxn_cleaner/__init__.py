@@ -6,7 +6,7 @@ __version__ = "0.0.4"
 import sys
 
 from .types import ReactionRecord
-from .parsing import parse_reaction_smiles, canonicalize_reaction
+from .parser import parse_reaction_smiles, canonicalize_reaction
 from .filters import (
     ReactionFilter,
     has_product,
@@ -16,7 +16,7 @@ from .filters import (
     meta_filter,
     default_filters,
 )
-from .cleaning import (
+from .cleaner import (
     clean_reactions,
     clean_and_canonicalize,
     basic_cleaning_pipeline,
@@ -29,15 +29,18 @@ from .io import (
     export_reaction_records_to_csv,
 )
 from .io import loader, loader_registry
+from . import cleaner as _cleaner
+from . import reporter as _reporter
 from .extractor import ord_procedure_yields_meta
 
+from . import parser as _parser
 from .utils import similarity_filter
 from .utils import similarity as _similarity
 
 __all__ = [
     # types
     "ReactionRecord",
-    # parsing
+    # parser
     "parse_reaction_smiles",
     "canonicalize_reaction",
     # filters
@@ -49,7 +52,7 @@ __all__ = [
     "meta_filter",
     "default_filters",
     "similarity_filter",
-    # cleaning
+    # cleaner
     "clean_reactions",
     "clean_and_canonicalize",
     "basic_cleaning_pipeline",
@@ -62,8 +65,3 @@ __all__ = [
     # extractor
     "ord_procedure_yields_meta",
 ]
-
-# Backward-compatible aliases for relocated submodules
-sys.modules[__name__ + ".loader"] = loader
-sys.modules[__name__ + ".loader_registry"] = loader_registry
-sys.modules[__name__ + ".similarity"] = _similarity

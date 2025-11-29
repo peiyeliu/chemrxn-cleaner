@@ -1,4 +1,4 @@
-# chemrxn_cleaner/reporting.py
+# chemrxn_cleaner/reporter.py
 
 from __future__ import annotations
 

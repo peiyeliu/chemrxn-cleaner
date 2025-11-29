@@ -33,17 +33,13 @@ ChemRxn-Cleaner aims to make cleaning reproducible. A typical workflow has five 
 ### 1. Loading Reaction Data
 
 ```python
-from chemrxn_cleaner.io.loader import (
-    load_uspto_rsmi,
-    load_csv_reaction_smiles,
-    load_ord_pb_reaction_smiles,
-)
+from chemrxn_cleaner.io.loader import load_uspto, load_csv, load_ord
 
 # USPTO .rsmi loader (metadata fields stored in meta["fields"])
-uspto_rxns = load_uspto_rsmi("data/uspto_sample.rsmi", keep_meta=True)
+uspto_rxns = load_uspto("data/uspto_sample.rsmi", keep_meta=True)
 
 # CSV loader: choose which columns hold reactants/reagents/products
-csv_rxns = load_csv_reaction_smiles(
+csv_rxns = load_csv(
     "data/reactions.csv",
     reactant_columns=["reactant_a", "reactant_b"],
     reagent_columns=["catalyst"],
@@ -52,14 +48,14 @@ csv_rxns = load_csv_reaction_smiles(
 )
 
 # CSV loader with pre-built reaction SMILES column
-csv_rxns_prebuilt = load_csv_reaction_smiles(
+csv_rxns_prebuilt = load_csv(
     "data/reactions.csv",
     reaction_smiles_column="rxn_smiles",
 )
 
 # ORD dataset loader with optional metadata extraction
 from chemrxn_cleaner.extractor import ord_procedure_yields_meta
-ord_rxns = load_ord_pb_reaction_smiles(
+ord_rxns = load_ord(
     "data/ord_dataset.pb.gz",
     meta_extractor=ord_procedure_yields_meta,
 )
@@ -82,7 +78,7 @@ cleaned_ord = basic_cleaning_pipeline(ord_rxns)
 The cleaning helpers are composable; you can control the filter order and canonicalization behavior explicitly:
 
 ```python
-from chemrxn_cleaner.cleaning import clean_and_canonicalize
+from chemrxn_cleaner.cleaner import clean_and_canonicalize
 from chemrxn_cleaner.filters import (
     default_filters,
     max_smiles_length,
@@ -129,9 +125,9 @@ Custom metadata extractors (see `chemrxn_cleaner/extractor.py`) can capture proc
 ### 5. Reporting and Exporting
 
 ```python
-from chemrxn_cleaner import reporting
+from chemrxn_cleaner import reporter
 
-report = reporting.summarize_cleaning(ord_rxns, cleaned_custom)
+report = reporter.summarize_cleaning(ord_rxns, cleaned_custom)
 report.pretty_print()
 
 # Export canonical reaction SMILES + metadata for downstream use
@@ -150,13 +146,13 @@ with open("cleaned_ord.jsonl", "w", encoding="utf-8") as f:
 ## Quick Start
 
 ```python
-from chemrxn_cleaner.io.loader import load_uspto_rsmi
-from chemrxn_cleaner import basic_cleaning_pipeline, reporting
+from chemrxn_cleaner.io.loader import load_uspto
+from chemrxn_cleaner import basic_cleaning_pipeline, reporter
 
-rxns = load_uspto_rsmi("/path/to/file.rsmi", keep_meta=True)
+rxns = load_uspto("/path/to/file.rsmi", keep_meta=True)
 cleaned = basic_cleaning_pipeline(rxns)
 
-report = reporting.summarize_cleaning(rxns, cleaned)
+report = reporter.summarize_cleaning(rxns, cleaned)
 report.pretty_print()
 ```
 

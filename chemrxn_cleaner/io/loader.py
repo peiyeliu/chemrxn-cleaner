@@ -13,7 +13,7 @@ from ord_schema.message_helpers import (
 from ord_schema.proto import dataset_pb2
 
 
-def load_uspto_rsmi(
+def load_uspto(
     path: str,
     keep_meta: bool = False,
 ) -> List[Tuple[str, Dict[str, Any]]]:
@@ -50,7 +50,7 @@ def load_uspto_rsmi(
     return reactions_with_meta
 
 
-def load_ord_pb_reaction_smiles(
+def load_ord(
     path: str,
     generate_if_missing: bool = True,
     allow_incomplete: bool = True,
@@ -98,7 +98,7 @@ def load_ord_pb_reaction_smiles(
     return rxn_smiles_list
 
 
-def load_csv_reaction_smiles(
+def load_csv(
     path: str,
     *,
     reactant_columns: Sequence[str] = (),
@@ -211,7 +211,7 @@ def load_csv_reaction_smiles(
     return reactions
 
 
-def load_json_reaction_smiles(
+def load_json(
     path: str,
     mapper: Callable[[Any], Optional[Tuple[str, Dict[str, Any]]]],
 ) -> List[Tuple[str, Dict[str, Any]]]:

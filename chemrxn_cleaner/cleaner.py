@@ -1,11 +1,11 @@
-# chemrxn_cleaner/cleaning.py
+# chemrxn_cleaner/cleaner.py
 
 from __future__ import annotations
 
 from typing import Iterable, List, Optional, Tuple, Dict, Any
 
 from .types import ReactionRecord
-from .parsing import parse_reaction_smiles, canonicalize_reaction
+from .parser import parse_reaction_smiles, canonicalize_reaction
 from .filters import ReactionFilter, default_filters
 
 

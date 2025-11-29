@@ -1,6 +1,6 @@
 import pytest
 
-from chemrxn_cleaner.cleaning import clean_reactions, clean_and_canonicalize
+from chemrxn_cleaner.cleaner import clean_reactions, clean_and_canonicalize
 
 
 def test_clean_reactions_attaches_metadata():

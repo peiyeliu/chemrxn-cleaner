@@ -152,16 +152,16 @@ def _register_builtin_formats() -> None:
     Can be called in __init__.py: loader_registry._register_builtin_formats()
     """
     from .loader import (
-        load_uspto_rsmi,
-        load_ord_pb_reaction_smiles,
-        load_csv_reaction_smiles,
-        load_json_reaction_smiles,
+        load_uspto,
+        load_ord,
+        load_csv,
+        load_json,
     )
 
-    register_input_format("uspto", load_uspto_rsmi, overwrite=True)
-    register_input_format("ord", load_ord_pb_reaction_smiles, overwrite=True)
-    register_input_format("csv", load_csv_reaction_smiles, overwrite=True)
-    register_input_format("json", load_json_reaction_smiles, overwrite=True)
+    register_input_format("uspto", load_uspto, overwrite=True)
+    register_input_format("ord", load_ord, overwrite=True)
+    register_input_format("csv", load_csv, overwrite=True)
+    register_input_format("json", load_json, overwrite=True)
 
 
 # Optional: auto-register built-in formats when the module is imported
