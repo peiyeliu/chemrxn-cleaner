@@ -15,6 +15,7 @@ _PERIODIC_TABLE = Chem.GetPeriodicTable()
 
 # ---------------------- tool functions ---------------------- #
 
+
 def _iter_all_smiles(record: ReactionRecord) -> Iterable[str]:
     """Yield all SMILES strings from a ReactionRecord."""
     yield from record.reactants
@@ -51,6 +52,7 @@ def _normalize_element_list(elements: Iterable[str] | None) -> Set[str] | None:
 
 # ---------------------- basic filter ---------------------- #
 
+
 def has_product(record: ReactionRecord) -> bool:
     """
     keep reactions have at least one product
@@ -59,9 +61,7 @@ def has_product(record: ReactionRecord) -> bool:
 
 
 def all_molecules_valid(record: ReactionRecord) -> bool:
-    """
-    
-    """
+    """ """
     for s in _iter_all_smiles(record):
         if not _is_valid_smiles(s):
             return False
@@ -69,6 +69,7 @@ def all_molecules_valid(record: ReactionRecord) -> bool:
 
 
 # ---------------------- factory filters ---------------------- #
+
 
 def max_smiles_length(max_len: int) -> ReactionFilter:
     """
@@ -149,7 +150,6 @@ def element_filter(
 # ---------------------- metadata filter ---------------------- #
 
 
-
 def meta_filter(predicate: Callable[[Dict[str, Any]], bool]) -> ReactionFilter:
     """
     Return a ReactionFilter that evaluates the provided predicate against the
@@ -168,6 +168,7 @@ def meta_filter(predicate: Callable[[Dict[str, Any]], bool]) -> ReactionFilter:
 
 
 # ---------------------- default filter ---------------------- #
+
 
 def default_filters() -> List[ReactionFilter]:
     """

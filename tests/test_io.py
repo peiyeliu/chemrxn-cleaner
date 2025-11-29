@@ -59,8 +59,7 @@ def test_csv_missing_columns(tmp_path):
 def test_csv_invalid_json_list(tmp_path):
     path = tmp_path / "bad_list.csv"
     path.write_text(
-        "raw,reactants,reagents,products,meta\n"
-        'foo,"not json",[],[],{}\n',
+        "raw,reactants,reagents,products,meta\n" 'foo,"not json",[],[],{}\n',
         encoding="utf-8",
     )
 

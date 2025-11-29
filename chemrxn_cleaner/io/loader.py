@@ -239,11 +239,15 @@ def load_json_reaction_smiles(
             )
         rxn_smiles, meta = mapped
         if not isinstance(rxn_smiles, str) or not rxn_smiles.strip():
-            raise ValueError(f"Mapper must return a non-empty reaction_smiles at index {idx}")
+            raise ValueError(
+                f"Mapper must return a non-empty reaction_smiles at index {idx}"
+            )
         if meta is None:
             meta = {}
         if not isinstance(meta, dict):
-            raise ValueError(f"Mapper must return dict metadata at index {idx}, got {type(meta)!r}")
+            raise ValueError(
+                f"Mapper must return dict metadata at index {idx}, got {type(meta)!r}"
+            )
         reactions.append((rxn_smiles.strip(), meta))
 
     return reactions

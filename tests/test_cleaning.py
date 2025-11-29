@@ -8,7 +8,7 @@ def test_clean_reactions_attaches_metadata():
         ("C=CCBr>>C=CCI", {"source": "test"}),
         ("CC(=O)O.OCC>[H+].[Cl-].OCC>CC(=O)OCC", {}),
         ("invalid-format", {"source": "bad"}),
-        ("CC(=O)Cl.NH3>>CC(=O)NH2", None)
+        ("CC(=O)Cl.NH3>>CC(=O)NH2", None),
     ]
 
     cleaned = clean_reactions(rxn_smiles_list=rxns, filters=[])

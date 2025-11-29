@@ -22,6 +22,7 @@ class FingerprintConfig:
 
 # ====== Utility helpers: build RDKit molecules and fingerprints from SMILES ======
 
+
 @lru_cache(maxsize=50_000)
 def _mol_from_smiles(smiles: str) -> Chem.Mol | None:
     """Cached molecule parsing to avoid rebuilding the same structure."""
@@ -32,7 +33,9 @@ def _mol_from_smiles(smiles: str) -> Chem.Mol | None:
 
 
 @lru_cache(maxsize=50_000)
-def _fingerprint_from_smiles(smiles: str, cfg: FingerprintConfig) -> DataStructs.ExplicitBitVect | None:
+def _fingerprint_from_smiles(
+    smiles: str, cfg: FingerprintConfig
+) -> DataStructs.ExplicitBitVect | None:
     """Generate a Morgan fingerprint from SMILES and cache the result."""
     mol = _mol_from_smiles(smiles)
     if mol is None:
@@ -62,6 +65,7 @@ def _iter_molecule_smiles(rxn: ReactionRecord, role: str) -> Iterable[str]:
 
 
 # ====== Public factory: build filter callable ======
+
 
 def similarity_filter(
     query_smiles: Union[str, List[str]],

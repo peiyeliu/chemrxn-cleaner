@@ -14,7 +14,9 @@ from typing import (
 
 @runtime_checkable
 class InputLoader(Protocol):
-    def __call__(self, source: Any, /, **kwargs: Any) -> Iterable[Tuple[str, Dict[str, Any]]]:
+    def __call__(
+        self, source: Any, /, **kwargs: Any
+    ) -> Iterable[Tuple[str, Dict[str, Any]]]:
         """
         Parameters
         ----------
@@ -30,11 +32,13 @@ class InputLoader(Protocol):
         """
         ...
 
+
 _INPUT_FORMAT_REGISTRY: Dict[str, InputLoader] = {}
 
 
 class InputFormatError(ValueError):
     """Error raised when registering or retrieving an input format fails."""
+
     pass
 
 
@@ -108,8 +112,7 @@ def get_input_format(name: str) -> InputLoader:
     except KeyError:
         available = ", ".join(sorted(_INPUT_FORMAT_REGISTRY.keys())) or "<none>"
         raise InputFormatError(
-            f"Unknown input format '{key}'. "
-            f"Available formats: {available}"
+            f"Unknown input format '{key}'. " f"Available formats: {available}"
         ) from None
 
 
@@ -148,7 +151,12 @@ def _register_builtin_formats() -> None:
     Register built-in input formats when the package is imported.
     Can be called in __init__.py: loader_registry._register_builtin_formats()
     """
-    from .loader import load_uspto_rsmi, load_ord_pb_reaction_smiles, load_csv_reaction_smiles, load_json_reaction_smiles
+    from .loader import (
+        load_uspto_rsmi,
+        load_ord_pb_reaction_smiles,
+        load_csv_reaction_smiles,
+        load_json_reaction_smiles,
+    )
 
     register_input_format("uspto", load_uspto_rsmi, overwrite=True)
     register_input_format("ord", load_ord_pb_reaction_smiles, overwrite=True)

@@ -6,11 +6,11 @@ from chemrxn_cleaner.types import ElementFilterRule, ReactionRecord
 
 def _record_with_meta(meta):
     return ReactionRecord(
-        raw="CC(=O)O.OCC>[H+].[Cl-].OCC>CC(=O)OCC", 
-        reactants=["CC(=O)O.OCC"], 
-        reagents=["[H+].[Cl-].OCC"], 
-        products=["CC(=O)OCC"], 
-        meta=meta
+        raw="CC(=O)O.OCC>[H+].[Cl-].OCC>CC(=O)OCC",
+        reactants=["CC(=O)O.OCC"],
+        reagents=["[H+].[Cl-].OCC"],
+        products=["CC(=O)OCC"],
+        meta=meta,
     )
 
 
@@ -29,13 +29,13 @@ def test_element_filter():
     empty_rule = element_filter()
 
     forbid_Cl = element_filter(
-        allowList=ElementFilterRule([],[],[]),
-        forbidList=ElementFilterRule([],["Cl"],[])
+        allowList=ElementFilterRule([], [], []),
+        forbidList=ElementFilterRule([], ["Cl"], []),
     )
 
     allow_CH = element_filter(
-        allowList=ElementFilterRule(["C", "H", "O", "Cl", "F", "N"],[],[]),
-        forbidList=ElementFilterRule([],[],[])
+        allowList=ElementFilterRule(["C", "H", "O", "Cl", "F", "N"], [], []),
+        forbidList=ElementFilterRule([], [], []),
     )
 
     assert empty_rule(rxn) is True
@@ -49,5 +49,3 @@ def test_element_filter_rejects_invalid_symbols():
             allowList=ElementFilterRule(["Xx"], [], []),
             forbidList=None,
         )
-
-

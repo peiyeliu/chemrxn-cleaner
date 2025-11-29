@@ -53,10 +53,7 @@ def test_load_csv_reaction_smiles_infers_meta(tmp_path):
 
 
 def test_load_csv_reaction_smiles_custom_meta(tmp_path):
-    data = (
-        "reactant,reagent,product,ref,source\n"
-        "A,,C,foo,bar\n"
-    )
+    data = "reactant,reagent,product,ref,source\n" "A,,C,foo,bar\n"
     path = tmp_path / "rxn_single.csv"
     path.write_text(data, encoding="utf-8")
 
@@ -71,11 +68,7 @@ def test_load_csv_reaction_smiles_custom_meta(tmp_path):
 
 
 def test_load_csv_reaction_smiles_combined_column(tmp_path):
-    data = (
-        "rxn_smiles,tag\n"
-        "A.B>C>D,batch\n"
-        ",empty\n"
-    )
+    data = "rxn_smiles,tag\n" "A.B>C>D,batch\n" ",empty\n"
     path = tmp_path / "rxn_combined.csv"
     path.write_text(data, encoding="utf-8")
 

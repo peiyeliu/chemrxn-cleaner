@@ -6,7 +6,8 @@ from typing import List, Dict, Any
 @dataclass
 class ReactionRecord:
     """Container for a single reaction instance."""
-    raw: str                # raw SMILES strings
+
+    raw: str  # raw SMILES strings
     reactants: List[str]
     reagents: List[str]
     products: List[str]
@@ -36,7 +37,7 @@ class ReactionRecord:
             products=list(data.get("products", []) or []),
             meta=data.get("meta"),
         )
-    
+
     def show(
         self,
         size: tuple[int, int] = (2400, 600),
@@ -46,12 +47,9 @@ class ReactionRecord:
     ):
         from rdkit.Chem import Draw, rdChemReactions
 
-        rxn_smiles = (self.raw)
+        rxn_smiles = self.raw
 
-        rxn = rdChemReactions.ReactionFromSmarts(
-            rxn_smiles,
-            useSmiles=True
-        )
+        rxn = rdChemReactions.ReactionFromSmarts(rxn_smiles, useSmiles=True)
 
         if not show_atom_map_numbers:
             # Remove atom-map numbers to avoid numbered atom labels in depictions.
@@ -64,10 +62,7 @@ class ReactionRecord:
                     if atom.HasProp("molAtomMapNumber"):
                         atom.ClearProp("molAtomMapNumber")
 
-        img = Draw.ReactionToImage(
-            rxn,
-            subImgSize=(size[0] // 3, size[1]) 
-        )
+        img = Draw.ReactionToImage(rxn, subImgSize=(size[0] // 3, size[1]))
 
         if jupyter:
             try:
@@ -81,10 +76,12 @@ class ReactionRecord:
                         f"<tr><th>{k}</th><td>{v}</td></tr>"
                         for k, v in self.meta.items()
                     )
-                    display(HTML(
-                        "<table border='1' style='border-collapse:collapse;'>"
-                        f"{rows}</table>"
-                    ))
+                    display(
+                        HTML(
+                            "<table border='1' style='border-collapse:collapse;'>"
+                            f"{rows}</table>"
+                        )
+                    )
 
         if not jupyter:
             try:
@@ -100,8 +97,8 @@ class ReactionRecord:
                 for k, v in self.meta.items():
                     print(f"  {k}: {v}")
 
-        return img 
-    
+        return img
+
 
 @dataclass
 class ElementFilterRule:
