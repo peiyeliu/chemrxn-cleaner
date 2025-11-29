@@ -162,11 +162,12 @@ def element_filter(
 def meta_filter(predicate: Callable[[Dict[str, Any]], bool]) -> ReactionFilter:
     """
     Return a ReactionFilter that evaluates the provided predicate against the
-    record metadata. Reactions with no metadata default to an empty dict.
+    record metadata (stored in extra_metadata). Reactions with no metadata
+    default to an empty dict.
     """
 
     def _filter(record: ReactionRecord) -> bool:
-        meta = record.meta or {}
+        meta = record.extra_metadata or {}
         try:
             return predicate(meta)
         except Exception:

@@ -35,7 +35,7 @@ ChemRxn-Cleaner aims to make cleaning reproducible. A typical workflow has five 
 ```python
 from chemrxn_cleaner.io.loader import load_uspto, load_csv, load_ord
 
-# USPTO .rsmi loader (metadata fields stored in meta["fields"])
+# USPTO .rsmi loader (metadata fields stored in extra_metadata["fields"])
 uspto_rxns = load_uspto("data/uspto_sample.rsmi", keep_meta=True)
 
 # CSV loader: choose which columns hold reactants/reagents/products
@@ -53,7 +53,7 @@ csv_rxns_prebuilt = load_csv(
     reaction_smiles_column="rxn_smiles",
 )
 
-# ORD dataset loader with optional metadata extraction
+# ORD dataset loader with optional metadata extraction; returns ReactionRecord objects
 from chemrxn_cleaner.extractor import ord_procedure_yields_meta
 ord_rxns = load_ord(
     "data/ord_dataset.pb.gz",
@@ -61,7 +61,7 @@ ord_rxns = load_ord(
 )
 ```
 
-Both loaders return lists of `(reaction_smiles, metadata_dict)` tuples which feed directly into the cleaning utilities.
+`load_uspto` and `load_csv` return lists of `(reaction_smiles, metadata_dict)` tuples, while `load_ord` now returns fully populated `ReactionRecord` objects (with `reaction_id`, yields, and basic conditions lifted into typed fields) that can be passed straight into the cleaning pipeline.
 
 ### 2. Running the Built-in Cleaning Pipeline
 
@@ -71,7 +71,7 @@ from chemrxn_cleaner import basic_cleaning_pipeline
 cleaned_ord = basic_cleaning_pipeline(ord_rxns)
 ```
 
-`basic_cleaning_pipeline` parses, filters, and canonicalizes every reaction using the default filter stack (`has_product`, `all_molecules_valid`). The result is a list of immutable `ReactionRecord` instances with `reactants`, `reagents`, `products`, and `meta` attributes.
+`basic_cleaning_pipeline` parses, filters, and canonicalizes every reaction using the default filter stack (`has_product`, `all_molecules_valid`). The result is a list of immutable `ReactionRecord` instances with `reactants`, `reagents`, `products`, and `extra_metadata` attributes.
 
 ### 3. Custom Filters and Canonicalization Options
 
@@ -116,7 +116,8 @@ Metadata travels with each `ReactionRecord` through the pipeline. This makes it 
 ```python
 subset = [
     rec for rec in cleaned_custom
-    if rec.meta.get("yields") and rec.meta["yields"][0]["yield_percent"] > 80
+    if rec.extra_metadata.get("yields")
+    and rec.extra_metadata["yields"][0]["yield_percent"] > 80
 ]
 ```
 
@@ -138,7 +139,7 @@ with open("cleaned_ord.jsonl", "w", encoding="utf-8") as f:
             "reactants": rec.reactants,
             "reagents": rec.reagents,
             "products": rec.products,
-            "meta": rec.meta,
+            "extra_metadata": rec.extra_metadata,
         }
         f.write(json.dumps(payload) + "\n")
 ```

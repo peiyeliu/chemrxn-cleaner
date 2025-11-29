@@ -4,6 +4,7 @@ import json
 import pytest
 
 from chemrxn_cleaner.io import loader
+from chemrxn_cleaner.types import ReactionRecord, YieldType
 
 
 def test_load_uspto_without_meta(tmp_path):
@@ -103,15 +104,35 @@ def test_load_json_with_mapper(tmp_path):
 
 
 def test_load_ord_returns_meta(monkeypatch):
+    class DummyProduct:
+        def __init__(self, yield_value: float | None):
+            self.yield_value = yield_value
+
+    class DummyOutcome:
+        def __init__(self, products):
+            self.products = products
+
     class DummyReaction:
-        def __init__(self, reaction_id: str, smiles: str):
+        def __init__(self, reaction_id: str, smiles: str, outcomes, flat):
             self.reaction_id = reaction_id
             self.smiles = smiles
+            self.outcomes = outcomes
+            self.flat = flat
 
     dummy_dataset = types.SimpleNamespace(
         reactions=[
-            DummyReaction("rxn-1", "A>B>C"),
-            DummyReaction("", "D>E>F"),
+            DummyReaction(
+                "rxn-1",
+                "A>B>C",
+                [DummyOutcome([DummyProduct(82.5)])],
+                {"conditions.temperature": 25, "conditions.time": 2},
+            ),
+            DummyReaction(
+                "",
+                "D>E>F",
+                [DummyOutcome([DummyProduct(None)])],
+                {},
+            ),
         ]
     )
 
@@ -122,15 +143,33 @@ def test_load_ord_returns_meta(monkeypatch):
     def fake_get_reaction_smiles(message, **kwargs):
         return message.smiles
 
+    def fake_get_product_yield(product, as_measurement=False):
+        return product.yield_value
+
+    def fake_message_to_row(reaction):
+        return reaction.flat
+
     monkeypatch.setattr(loader, "load_message", fake_load_message)
     monkeypatch.setattr(loader, "get_reaction_smiles", fake_get_reaction_smiles)
+    monkeypatch.setattr(loader, "get_product_yield", fake_get_product_yield)
+    monkeypatch.setattr(loader, "message_to_row", fake_message_to_row)
 
     reactions = loader.load_ord("dummy.pb")
 
-    assert reactions == [
-        ("A>B>C", {"reaction_id": "rxn-1", "reaction_index": 0}),
-        ("D>E>F", {"reaction_index": 1}),
-    ]
+    assert isinstance(reactions[0], ReactionRecord)
+    assert reactions[0].reaction_id == "rxn-1"
+    assert reactions[0].reactants == ["A"]
+    assert reactions[0].products == ["C"]
+    assert reactions[0].yield_value == 82.5
+    assert reactions[0].yield_type == YieldType.OTHER
+    assert reactions[0].temperature_c == 25
+    assert reactions[0].time_hours == 2
+    assert reactions[0].extra_metadata["reaction_index"] == 0
+
+    assert reactions[1].reaction_id == ""
+    assert reactions[1].yield_value is None
+    assert reactions[1].yield_type == YieldType.NONE
+    assert reactions[1].extra_metadata["reaction_index"] == 1
 
 
 def test_load_ord_applies_meta_extractor(monkeypatch):
@@ -138,6 +177,7 @@ def test_load_ord_applies_meta_extractor(monkeypatch):
         def __init__(self, reaction_id: str, smiles: str):
             self.reaction_id = reaction_id
             self.smiles = smiles
+            self.outcomes = []
 
     dummy_dataset = types.SimpleNamespace(
         reactions=[
@@ -152,15 +192,23 @@ def test_load_ord_applies_meta_extractor(monkeypatch):
     def fake_get_reaction_smiles(message, **kwargs):
         return message.smiles
 
+    def fake_get_product_yield(product, as_measurement=False):
+        return None
+
+    def fake_message_to_row(reaction):
+        return {}
+
     monkeypatch.setattr(loader, "load_message", fake_load_message)
     monkeypatch.setattr(loader, "get_reaction_smiles", fake_get_reaction_smiles)
+    monkeypatch.setattr(loader, "get_product_yield", fake_get_product_yield)
+    monkeypatch.setattr(loader, "message_to_row", fake_message_to_row)
 
     def meta_extractor(reaction):
         return {"extra": f"meta-{reaction.smiles}"}
 
     reactions = loader.load_ord("dummy.pb", meta_extractor=meta_extractor)
 
-    assert reactions == [
-        ("A>B>C", {"reaction_id": "rxn-1", "reaction_index": 0, "extra": "meta-A>B>C"}),
-        ("D>E>F", {"reaction_index": 1, "extra": "meta-D>E>F"}),
-    ]
+    assert reactions[0].extra_metadata["extra"] == "meta-A>B>C"
+    assert reactions[0].reaction_id == "rxn-1"
+    assert reactions[1].extra_metadata["extra"] == "meta-D>E>F"
+    assert reactions[1].reaction_id == ""

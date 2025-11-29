@@ -9,8 +9,12 @@ from typing import Callable, List, Dict, Any, Optional, Tuple, Sequence
 from ord_schema.message_helpers import (
     load_message,
     get_reaction_smiles,
+    get_product_yield,
+    message_to_row,
 )
 from ord_schema.proto import dataset_pb2
+from ..types import ReactionRecord, YieldType
+from ..parser import parse_reaction_smiles
 
 
 def load_uspto(
@@ -56,7 +60,7 @@ def load_ord(
     allow_incomplete: bool = True,
     canonical: bool = True,
     meta_extractor: Optional[Callable[[dataset_pb2.Reaction], Dict[str, Any]]] = None,
-) -> List[Tuple[str, Dict[str, Any]]]:
+) -> List[ReactionRecord]:
     """
     Load an ORD *.pb or *.pb.gz file and extract reaction SMILES.
 
@@ -70,10 +74,90 @@ def load_ord(
             If True, return canonical reaction SMILES.
 
     Returns:
-        A list of (reaction_smiles, meta_dict) tuples.
+        A list of ReactionRecord objects with metadata + basic conditions populated.
     """
     dataset = load_message(path, dataset_pb2.Dataset)
-    rxn_smiles_list: List[Tuple[str, Dict[str, Any]]] = []
+    rxn_records: List[ReactionRecord] = []
+
+    def _coerce_float(value: Any) -> Optional[float]:
+        if value is None:
+            return None
+        if isinstance(value, (int, float)):
+            return float(value)
+        nested = getattr(value, "value", None)
+        if nested is not None:
+            try:
+                return float(nested)
+            except Exception:
+                return None
+        try:
+            return float(value)
+        except Exception:
+            return None
+
+    def _extract_conditions(
+        reaction: dataset_pb2.Reaction,
+    ) -> Dict[str, Any]:
+        try:
+            flat = message_to_row(reaction)
+        except Exception:
+            flat = {}
+
+        def first(*keys: str) -> Any:
+            for key in keys:
+                if key in flat:
+                    return flat[key]
+            return None
+
+        conditions: Dict[str, Any] = {}
+        temperature = _coerce_float(
+            first("conditions.temperature", "setup.temperature")
+        )
+        if temperature is not None:
+            conditions["temperature_c"] = temperature
+
+        time_hours = _coerce_float(first("conditions.time", "setup.time"))
+        if time_hours is not None:
+            conditions["time_hours"] = time_hours
+
+        pressure_bar = _coerce_float(
+            first("conditions.pressure", "setup.pressure", "conditions.vessel.pressure")
+        )
+        if pressure_bar is not None:
+            conditions["pressure_bar"] = pressure_bar
+
+        ph = _coerce_float(first("conditions.ph", "setup.ph"))
+        if ph is not None:
+            conditions["ph"] = ph
+
+        atmosphere = first("conditions.atmosphere", "setup.atmosphere")
+        if atmosphere is not None:
+            conditions["atmosphere"] = str(atmosphere)
+
+        scale_mmol = _coerce_float(first("conditions.scale", "setup.scale"))
+        if scale_mmol is not None:
+            conditions["scale_mmol"] = scale_mmol
+
+        return conditions
+
+    def _extract_primary_yield(
+        reaction: dataset_pb2.Reaction,
+    ) -> Tuple[Optional[float], YieldType]:
+        best_yield: Optional[float] = None
+        for outcome in getattr(reaction, "outcomes", []):
+            for product in getattr(outcome, "products", []):
+                try:
+                    y_val = get_product_yield(product, as_measurement=False)
+                except Exception:
+                    y_val = None
+                y_float = _coerce_float(y_val)
+                if y_float is None:
+                    continue
+                if best_yield is None or y_float > best_yield:
+                    best_yield = y_float
+        if best_yield is None:
+            return None, YieldType.NONE
+        return best_yield, YieldType.OTHER
 
     for idx, rxn in enumerate(dataset.reactions):
         smi: Optional[str] = get_reaction_smiles(
@@ -83,19 +167,28 @@ def load_ord(
             canonical=canonical,
         )
         if smi:
-            meta: Dict[str, Any] = {}
-            if rxn.reaction_id:
-                meta["reaction_id"] = rxn.reaction_id
-            meta["reaction_index"] = idx
+            record = parse_reaction_smiles(smi, strict=False)
+            record.reaction_smiles = smi
+            record.reaction_id = getattr(rxn, "reaction_id", "") or ""
+            record.source = "ord"
+            record.source_ref = path
+            record.extra_metadata["reaction_index"] = idx
+
+            yield_value, yield_type = _extract_primary_yield(rxn)
+            record.yield_value = yield_value
+            record.yield_type = yield_type
+
+            for key, value in _extract_conditions(rxn).items():
+                setattr(record, key, value)
 
             if meta_extractor is not None:
                 extra_meta = meta_extractor(rxn)
                 if extra_meta:
-                    meta.update(extra_meta)
+                    record.extra_metadata.update(extra_meta)
 
-            rxn_smiles_list.append((smi, meta))
+            rxn_records.append(record)
 
-    return rxn_smiles_list
+    return rxn_records
 
 
 def load_csv(

@@ -8,15 +8,18 @@ from typing import (
     List,
     Protocol,
     Tuple,
+    Union,
     runtime_checkable,
 )
+
+from ..types import ReactionRecord
 
 
 @runtime_checkable
 class InputLoader(Protocol):
     def __call__(
         self, source: Any, /, **kwargs: Any
-    ) -> Iterable[Tuple[str, Dict[str, Any]]]:
+    ) -> Iterable[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]:
         """
         Parameters
         ----------
@@ -28,7 +31,7 @@ class InputLoader(Protocol):
 
         Returns
         -------
-        Iterable[Tuple[str, Dict[str, Any]]]
+        Iterable[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]
         """
         ...
 
@@ -82,7 +85,7 @@ def register_input_format(
         # Type check is intentionally loose but can help catch issues early
         raise InputFormatError(
             f"Loader for format '{key}' does not match InputLoader protocol. "
-            f"Expected callable(source, **kwargs) -> Iterable[Tuple[str, Dict[str, Any]]]."
+            f"Expected callable(source, **kwargs) -> Iterable[ReactionRecord | Tuple[str, Dict[str, Any]]]."
         )
 
     _INPUT_FORMAT_REGISTRY[key] = loader
@@ -121,7 +124,7 @@ def load_reactions(
     *,
     fmt: str,
     **kwargs: Any,
-) -> List[Tuple[str, Dict[str, Any]]]:
+) -> List[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]:
     """
     Parse an external data source into a list of Tuple[str, Dict[str, Any]] using the given format.
 
@@ -140,7 +143,7 @@ def load_reactions(
 
     Returns
     -------
-    List[Tuple[str, Dict[str, Any]]]
+    List[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]
     """
     loader = get_input_format(fmt)
     return list(loader(source, **kwargs))

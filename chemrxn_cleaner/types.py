@@ -22,10 +22,9 @@ class ReactionRecord:
     source: str = ""
     source_ref: Optional[str] = None
     reaction_smiles: str = ""  # raw SMILES strings
-    reactants: List[str]
-    reagents: List[str]
-    products: List[str]
-    meta: Dict[str, Any] | None = None
+    reactants: List[str] = field(default_factory=list)
+    reagents: List[str] = field(default_factory=list)
+    products: List[str] = field(default_factory=list)
 
     atom_mapping: Optional[str] = None
     reaction_class: Optional[str] = None
@@ -63,7 +62,7 @@ class ReactionRecord:
     # ---- Extension hooks ----
     extra_numeric: Dict[str, float] = field(default_factory=dict)
     extra_categorical: Dict[str, str] = field(default_factory=dict)
-    extra_metadata: Dict[str, str] = field(default_factory=dict)
+    extra_metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
         """
@@ -77,7 +76,6 @@ class ReactionRecord:
             "reactants": list(self.reactants),
             "reagents": list(self.reagents),
             "products": list(self.products),
-            "meta": self.meta,
             "atom_mapping": self.atom_mapping,
             "reaction_class": self.reaction_class,
             "temperature_c": self.temperature_c,
@@ -101,7 +99,7 @@ class ReactionRecord:
             "split": self.split,
             "extra_numeric": dict(self.extra_numeric),
             "extra_categorical": dict(self.extra_categorical),
-            "extra_metadata": dict(self.extra_metadata),
+            "extra_metadata": dict(self.extra_metadata or {}),
         }
 
     @classmethod
@@ -126,7 +124,6 @@ class ReactionRecord:
             reactants=list(data.get("reactants", []) or []),
             reagents=list(data.get("reagents", []) or []),
             products=list(data.get("products", []) or []),
-            meta=data.get("meta"),
             atom_mapping=data.get("atom_mapping"),
             reaction_class=data.get("reaction_class"),
             temperature_c=data.get("temperature_c"),
@@ -150,8 +147,12 @@ class ReactionRecord:
             split=data.get("split"),
             extra_numeric=dict(data.get("extra_numeric", {}) or {}),
             extra_categorical=dict(data.get("extra_categorical", {}) or {}),
-            extra_metadata=dict(data.get("extra_metadata", {}) or {}),
+            extra_metadata=cls._merge_extra_metadata(data),
         )
+
+    def __post_init__(self) -> None:
+        if self.extra_metadata is None:
+            self.extra_metadata = {}
 
     def show(
         self,
@@ -186,10 +187,10 @@ class ReactionRecord:
                 jupyter = False
             else:
                 display(img)
-                if with_meta and self.meta:
+                if with_meta and self.extra_metadata:
                     rows = "".join(
                         f"<tr><th>{k}</th><td>{v}</td></tr>"
-                        for k, v in self.meta.items()
+                        for k, v in self.extra_metadata.items()
                     )
                     display(
                         HTML(
@@ -207,9 +208,9 @@ class ReactionRecord:
                     " Consider running in a Jupyter environment."
                 )
                 print(f"Original error: {exc}")
-            if with_meta and self.meta:
+            if with_meta and self.extra_metadata:
                 print("Metadata:")
-                for k, v in self.meta.items():
+                for k, v in self.extra_metadata.items():
                     print(f"  {k}: {v}")
 
         return img

@@ -6,7 +6,7 @@ from __future__ import annotations
 from pathlib import Path
 import json
 import csv
-from typing import Iterable, Sequence
+from typing import Iterable, Sequence, List, Dict, Any
 
 from ..types import ReactionRecord
 
@@ -34,7 +34,13 @@ def export_reaction_records_to_csv(
 ) -> None:
     """Write reactions to ``path`` in CSV format."""
     out_path = _ensure_path(path)
-    fieldnames = ["reaction_smiles", "reactants", "reagents", "products", "meta"]
+    fieldnames = [
+        "reaction_smiles",
+        "reactants",
+        "reagents",
+        "products",
+        "extra_metadata",
+    ]
 
     def dumps(obj: Iterable[str] | dict | None) -> str:
         if obj is None:
@@ -51,6 +57,6 @@ def export_reaction_records_to_csv(
                     "reactants": dumps(list(record.reactants)),
                     "reagents": dumps(list(record.reagents)),
                     "products": dumps(list(record.products)),
-                    "meta": dumps(record.meta),
+                    "extra_metadata": dumps(record.extra_metadata),
                 }
             )

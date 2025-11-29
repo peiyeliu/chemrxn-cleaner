@@ -14,14 +14,14 @@ def test_summarize_cleaning_counts_and_stats():
             reactants=["A"],
             reagents=["B"],
             products=["C1", "C2"],
-            meta={"source": "a"},
+            extra_metadata={"source": "a"},
         ),
         ReactionRecord(
             reaction_smiles="rxn2",
             reactants=["A1", "A2"],
             reagents=[],
             products=["P"],
-            meta={"source": "b"},
+            extra_metadata={"source": "b"},
         ),
     ]
 

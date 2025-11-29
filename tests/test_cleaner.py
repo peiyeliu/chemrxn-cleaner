@@ -15,11 +15,11 @@ def test_clean_reactions_attaches_metadata():
 
     assert len(cleaned) == 3
     assert cleaned[0].reaction_smiles == "C=CCBr>>C=CCI"
-    assert cleaned[0].meta == {"source": "test"}
+    assert cleaned[0].extra_metadata == {"source": "test"}
     assert cleaned[1].reaction_smiles == "CC(=O)O.OCC>[H+].[Cl-].OCC>CC(=O)OCC"
-    assert cleaned[1].meta == {}
+    assert cleaned[1].extra_metadata == {}
     assert cleaned[2].reaction_smiles == "CC(=O)Cl.NH3>>CC(=O)NH2"
-    assert cleaned[2].meta == {}
+    assert cleaned[2].extra_metadata == {}
 
 
 def test_clean_reactions_raises_when_drop_disabled():
@@ -40,6 +40,6 @@ def test_clean_and_canonicalize_preserves_meta():
 
     assert len(result) == 1
     record = result[0]
-    assert record.meta == {"id": 1}
+    assert record.extra_metadata == {"id": 1}
     assert record.reactants == ["CCO"]
     assert record.products == ["CCO"]

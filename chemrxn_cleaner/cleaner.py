@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Iterable, List, Optional, Tuple, Dict, Any
+from typing import Iterable, List, Optional, Tuple, Dict, Any, Union
 
 from .types import ReactionRecord
 from .parser import parse_reaction_smiles, canonicalize_reaction
@@ -10,7 +10,7 @@ from .filters import ReactionFilter, default_filters
 
 
 def clean_reactions(
-    rxn_smiles_list: Iterable[Tuple[str, Dict[str, Any]]],
+    rxn_smiles_list: Iterable[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]],
     filters: Optional[List[ReactionFilter]] = None,
     drop_failed_parse: bool = True,
     strict: bool = True,
@@ -22,7 +22,9 @@ def clean_reactions(
 
     Args:
         rxn_smiles_list:
-            An iterable of (reaction_smiles, meta_dict) tuples.
+            An iterable of ReactionRecord objects or (reaction_smiles, meta_dict)
+            tuples. When tuples are provided, the metadata dict is stored in
+            each record's extra_metadata.
 
         filters:
             A list of predicate functions. Each filter takes a ReactionRecord and
@@ -49,20 +51,28 @@ def clean_reactions(
     for rxn_entry in rxn_smiles_list:
         if rxn_entry is None:
             continue
-        rxn, meta = rxn_entry
-        if rxn is None:
-            continue
-        if meta is None:
-            meta = {}
-
-        try:
-            record = parse_reaction_smiles(rxn, strict=strict)
-        except Exception:
-            if drop_failed_parse:
+        if isinstance(rxn_entry, ReactionRecord):
+            record = rxn_entry
+        else:
+            rxn, meta = rxn_entry
+            if rxn is None:
                 continue
-            else:
-                raise
-        record.meta = meta
+            if meta is None:
+                meta = {}
+
+            try:
+                record = parse_reaction_smiles(rxn, strict=strict)
+            except Exception:
+                if drop_failed_parse:
+                    continue
+                else:
+                    raise
+            if record.extra_metadata is None:
+                record.extra_metadata = {}
+            record.extra_metadata.update(meta)
+
+        if record.extra_metadata is None:
+            record.extra_metadata = {}
 
         keep = True
         for f in filters:
@@ -77,7 +87,7 @@ def clean_reactions(
 
 
 def clean_and_canonicalize(
-    rxn_smiles_list: Iterable[Tuple[str, Dict[str, Any]]],
+    rxn_smiles_list: Iterable[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]],
     filters: Optional[List[ReactionFilter]] = None,
     drop_failed_parse: bool = True,
     strict: bool = True,
@@ -90,7 +100,8 @@ def clean_and_canonicalize(
 
     Args:
         rxn_smiles_list:
-            Iterable of (reaction_smiles, meta_dict) pairs.
+            Iterable of ReactionRecords or (reaction_smiles, meta_dict) pairs. Metadata
+            dicts are placed into extra_metadata.
 
         filters:
             List of ReactionFilter predicates. If None, uses default_filters().
@@ -122,7 +133,7 @@ def clean_and_canonicalize(
 
 
 def basic_cleaning_pipeline(
-    rxn_smiles_list: Iterable[Tuple[str, Dict[str, Any]]],
+    rxn_smiles_list: Iterable[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]],
 ) -> List[ReactionRecord]:
     """
     A simple out-of-the-box cleaning pipeline.

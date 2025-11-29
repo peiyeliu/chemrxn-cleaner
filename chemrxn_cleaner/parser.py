@@ -108,7 +108,6 @@ def parse_reaction_smiles(
         reactants=reactants,
         reagents=reagents,
         products=products,
-        meta=None,
     )
 
 
@@ -130,5 +129,5 @@ def canonicalize_reaction(
         reactants=canon_reactants,
         reagents=canon_reagents,
         products=canon_products,
-        meta=record.meta,
+        extra_metadata=dict(record.extra_metadata or {}),
     )

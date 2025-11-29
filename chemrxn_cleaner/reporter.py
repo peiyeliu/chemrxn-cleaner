@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List, Sequence, Tuple, Dict, Any
+from typing import Iterable, List, Sequence, Tuple, Dict, Any, Union
 
 from .types import ReactionRecord
 
@@ -90,7 +90,7 @@ def _median(values: List[int]) -> float:
 
 
 def summarize_cleaning(
-    raw_reactions: Sequence[Tuple[str, Dict[str, Any]]],
+    raw_reactions: Sequence[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]],
     cleaned_reactions: Sequence[ReactionRecord],
 ) -> CleaningReport:
     """

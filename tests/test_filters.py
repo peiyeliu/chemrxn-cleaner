@@ -7,11 +7,11 @@ from chemrxn_cleaner.types import ReactionRecord
 
 def _record_with_meta(meta):
     return ReactionRecord(
-        raw="CC(=O)O.OCC>[H+].[Cl-].OCC>CC(=O)OCC",
+        reaction_smiles="CC(=O)O.OCC>[H+].[Cl-].OCC>CC(=O)OCC",
         reactants=["CC(=O)O.OCC"],
         reagents=["[H+].[Cl-].OCC"],
         products=["CC(=O)OCC"],
-        meta=meta,
+        extra_metadata=meta,
     )
 
 
