@@ -21,6 +21,7 @@ class ReactionRecord:
     reaction_id: str = ""
     source: str = ""
     source_ref: Optional[str] = None
+    source_file_path: Optional[str] = None
     reaction_smiles: str = ""  # raw SMILES strings
     reactants: List[str] = field(default_factory=list)
     reagents: List[str] = field(default_factory=list)
@@ -72,6 +73,7 @@ class ReactionRecord:
             "reaction_id": self.reaction_id,
             "source": self.source,
             "source_ref": self.source_ref,
+            "source_file_path": self.source_file_path,
             "reaction_smiles": self.reaction_smiles,
             "reactants": list(self.reactants),
             "reagents": list(self.reagents),
@@ -120,6 +122,7 @@ class ReactionRecord:
             reaction_id=data.get("reaction_id", ""),
             source=data.get("source", ""),
             source_ref=data.get("source_ref"),
+            source_file_path=data.get("source_file_path"),
             reaction_smiles=data.get("reaction_smiles") or data.get("raw", ""),
             reactants=list(data.get("reactants", []) or []),
             reagents=list(data.get("reagents", []) or []),
