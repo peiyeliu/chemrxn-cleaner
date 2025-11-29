@@ -104,7 +104,7 @@ def parse_reaction_smiles(
     products = parse_smiles_list(products_block)
 
     return ReactionRecord(
-        raw=rxn_smiles,
+        reaction_smiles=rxn_smiles,
         reactants=reactants,
         reagents=reagents,
         products=products,
@@ -126,7 +126,7 @@ def canonicalize_reaction(
     canon_products = canonicalize_smiles_list(record.products, isomeric=isomeric)
 
     return ReactionRecord(
-        raw=record.raw,
+        reaction_smiles=record.reaction_smiles,
         reactants=canon_reactants,
         reagents=canon_reagents,
         products=canon_products,

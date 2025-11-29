@@ -85,7 +85,7 @@ from chemrxn_cleaner.filters import (
     element_filter,
     meta_filter,
 )
-from chemrxn_cleaner.types import ElementFilterRule
+from chemrxn_cleaner.filters import ElementFilterRule
 
 filters = default_filters() + [
     max_smiles_length(250),

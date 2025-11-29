@@ -34,7 +34,7 @@ def export_reaction_records_to_csv(
 ) -> None:
     """Write reactions to ``path`` in CSV format."""
     out_path = _ensure_path(path)
-    fieldnames = ["raw", "reactants", "reagents", "products", "meta"]
+    fieldnames = ["reaction_smiles", "reactants", "reagents", "products", "meta"]
 
     def dumps(obj: Iterable[str] | dict | None) -> str:
         if obj is None:
@@ -47,7 +47,7 @@ def export_reaction_records_to_csv(
         for record in records:
             writer.writerow(
                 {
-                    "raw": record.raw,
+                    "reaction_smiles": record.reaction_smiles,
                     "reactants": dumps(list(record.reactants)),
                     "reagents": dumps(list(record.reagents)),
                     "products": dumps(list(record.products)),

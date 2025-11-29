@@ -1,7 +1,8 @@
 import pytest
 
 from chemrxn_cleaner.filters import meta_filter, element_filter
-from chemrxn_cleaner.types import ElementFilterRule, ReactionRecord
+from chemrxn_cleaner.filters import ElementFilterRule
+from chemrxn_cleaner.types import ReactionRecord
 
 
 def _record_with_meta(meta):

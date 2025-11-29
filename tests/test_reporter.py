@@ -10,14 +10,14 @@ def test_summarize_cleaning_counts_and_stats():
     ]
     cleaned = [
         ReactionRecord(
-            raw="rxn1",
+            reaction_smiles="rxn1",
             reactants=["A"],
             reagents=["B"],
             products=["C1", "C2"],
             meta={"source": "a"},
         ),
         ReactionRecord(
-            raw="rxn2",
+            reaction_smiles="rxn2",
             reactants=["A1", "A2"],
             reagents=[],
             products=["P"],

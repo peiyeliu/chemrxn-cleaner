@@ -2,11 +2,20 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Callable, Iterable, List, Set, Dict, Any
 
 from rdkit import Chem
 
-from .types import ReactionRecord, ElementFilterRule
+from .types import ReactionRecord
+
+
+@dataclass
+class ElementFilterRule:
+    reactantElements: List[str]
+    reagentElements: List[str]
+    productElements: List[str]
+
 
 ReactionFilter = Callable[[ReactionRecord], bool]
 

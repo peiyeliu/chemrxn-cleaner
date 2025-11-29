@@ -14,11 +14,11 @@ def test_clean_reactions_attaches_metadata():
     cleaned = clean_reactions(rxn_smiles_list=rxns, filters=[])
 
     assert len(cleaned) == 3
-    assert cleaned[0].raw == "C=CCBr>>C=CCI"
+    assert cleaned[0].reaction_smiles == "C=CCBr>>C=CCI"
     assert cleaned[0].meta == {"source": "test"}
-    assert cleaned[1].raw == "CC(=O)O.OCC>[H+].[Cl-].OCC>CC(=O)OCC"
+    assert cleaned[1].reaction_smiles == "CC(=O)O.OCC>[H+].[Cl-].OCC>CC(=O)OCC"
     assert cleaned[1].meta == {}
-    assert cleaned[2].raw == "CC(=O)Cl.NH3>>CC(=O)NH2"
+    assert cleaned[2].reaction_smiles == "CC(=O)Cl.NH3>>CC(=O)NH2"
     assert cleaned[2].meta == {}
 
 
