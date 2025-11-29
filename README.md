@@ -23,16 +23,11 @@ pip install -e .
 from chemrxn_cleaner import basic_cleaning_pipeline, reporter, parse_reaction_smiles
 from chemrxn_cleaner.io.loader import load_uspto
 
-raw_tuples = load_uspto("data/sample.rsmi", keep_meta=True)
-raw = []
-for smi, meta in raw_tuples:
-    rec = parse_reaction_smiles(smi, strict=False)
-    rec.extra_metadata.update(meta or {})
-    raw.append(rec)
+raw = load_uspto("data/sample.rsmi", keep_meta=True)
 
 cleaned = basic_cleaning_pipeline(raw)
 
-summary = reporter.summarize_cleaning(raw_reactions=raw_tuples, cleaned_reactions=cleaned)
+summary = reporter.summarize_cleaning(raw_reactions=raw, cleaned_reactions=cleaned)
 summary.pretty_print()
 ```
 
@@ -44,12 +39,7 @@ from chemrxn_cleaner.extractor import ord_procedure_yields_meta
 from chemrxn_cleaner.parser import parse_reaction_smiles
 
 # USPTO .rsmi loader (optional metadata fields stored in extra_metadata["fields"])
-uspto_raw = load_uspto("data/uspto_sample.rsmi", keep_meta=True)
-uspto_rxns = []
-for smi, meta in uspto_raw:
-    rec = parse_reaction_smiles(smi, strict=False)
-    rec.extra_metadata.update(meta or {})
-    uspto_rxns.append(rec)
+uspto_rxns = load_uspto("data/uspto_sample.rsmi", keep_meta=True)
 
 # CSV loader: assemble reaction SMILES from column mappings
 csv_rxns = load_csv(
@@ -57,19 +47,28 @@ csv_rxns = load_csv(
     reactant_columns=["reactant_a", "reactant_b"],
     reagent_columns=["catalyst"],
     product_columns=["product"],
+    mapper=lambda record, row: (
+        record.extra_metadata.update({"temperature": row.get("temp_c")}) or record
+    ),
 )
 
 # CSV loader with a pre-built reaction_smiles column
 csv_rxns_prebuilt = load_csv(
     "data/reactions.csv",
     reaction_smiles_column="rxn_smiles",
+    mapper=lambda record, row: record,
 )
 
+The `mapper` callable receives `(record, row)` and can set optional attributes or skip rows by returning `None`.
+
 # JSON loader with a custom mapper per entry
-json_rxns = load_json("data/reactions.json", mapper=lambda item: (
-    f"{item['reactants']}>>{item['products']}",
-    item.get("meta", {}),
-))
+def map_json_entry(item):
+    rec = parse_reaction_smiles(f"{item['reactants']}>>{item['products']}", strict=False)
+    rec.source = "json"
+    rec.extra_metadata.update(item.get("meta", {}))
+    return rec
+
+json_rxns = load_json("data/reactions.json", mapper=map_json_entry)
 
 # ORD dataset loader (returns populated ReactionRecord objects)
 ord_rxns = load_ord(
@@ -78,7 +77,7 @@ ord_rxns = load_ord(
 )
 ```
 
-`load_uspto`, `load_csv`, and `load_json` return `(reaction_smiles, metadata_dict)` tuples. `load_ord` returns fully populated `ReactionRecord` objects with `reaction_id`, yields, basic conditions (temperature, time, pressure, pH, atmosphere, scale), and `extra_metadata["reaction_index"]` set.
+`load_uspto`, `load_csv`, `load_json`, and `load_ord` return `ReactionRecord` objects. `load_ord` additionally populates `reaction_id`, yields, basic conditions (temperature, time, pressure, pH, atmosphere, scale), and `extra_metadata["reaction_index"]`.
 
 You can also register custom loaders and call them through the registry:
 

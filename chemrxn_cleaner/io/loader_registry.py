@@ -126,7 +126,7 @@ def load_reactions(
     **kwargs: Any,
 ) -> List[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]:
     """
-    Parse an external data source into a list of Tuple[str, Dict[str, Any]] using the given format.
+    Parse an external data source into ReactionRecord objects or (reaction_smiles, metadata) tuples using the given format.
 
     Parameters
     ----------

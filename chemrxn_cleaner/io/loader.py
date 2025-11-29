@@ -20,7 +20,7 @@ from ..parser import parse_reaction_smiles
 def load_uspto(
     path: str,
     keep_meta: bool = False,
-) -> List[Tuple[str, Dict[str, Any]]]:
+) -> List[ReactionRecord]:
     """
     Load a USPTO .rsmi file.
 
@@ -30,13 +30,13 @@ def load_uspto(
     Args:
         path: Path to .rsmi file.
         keep_meta:
-            - False: return List[(reaction_smiles, {})]
-            - True:  return List[(reaction_smiles, meta_dict)]
+            - False: return List[ReactionRecord]
+            - True:  return List[ReactionRecord] with extra_metadata["fields"] set
 
     Returns:
-        List[(str, dict)]
+        List[ReactionRecord]
     """
-    reactions_with_meta: List[Tuple[str, Dict[str, Any]]] = []
+    reactions: List[ReactionRecord] = []
 
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
@@ -46,12 +46,20 @@ def load_uspto(
 
             parts = line.split("\t")
             rxn_smiles = parts[0].strip()
-            meta: Dict[str, Any] = {}
-            if keep_meta and len(parts) > 1:
-                meta["fields"] = parts[1:]
-            reactions_with_meta.append((rxn_smiles, meta))
+            if not rxn_smiles:
+                continue
 
-    return reactions_with_meta
+            record = parse_reaction_smiles(rxn_smiles, strict=False)
+            record.reaction_smiles = rxn_smiles
+            record.source = "uspto"
+            record.source_ref = path
+
+            if keep_meta and len(parts) > 1:
+                record.extra_metadata["fields"] = parts[1:]
+
+            reactions.append(record)
+
+    return reactions
 
 
 def load_ord(
@@ -197,12 +205,14 @@ def load_csv(
     reactant_columns: Sequence[str] = (),
     product_columns: Sequence[str] = (),
     reagent_columns: Optional[Sequence[str]] = None,
-    meta_columns: Optional[Sequence[str]] = None,
     reaction_smiles_column: Optional[str] = None,
     delimiter: str = ",",
-) -> List[Tuple[str, Dict[str, Any]]]:
+    mapper: Optional[
+        Callable[[ReactionRecord, Dict[str, Any]], Optional[ReactionRecord]]
+    ] = None,
+) -> List[ReactionRecord]:
     """
-    Load reaction SMILES assembled from CSV columns.
+    Load ReactionRecord objects assembled from CSV columns.
 
     Args:
         path: Path to the CSV file.
@@ -212,13 +222,14 @@ def load_csv(
         reaction_smiles_column:
             Optional column containing full reaction SMILES. If provided,
             reactant/product/reagent columns are ignored.
-        meta_columns:
-            Which columns to include as metadata. If None, use all columns
-            not listed in reactant/product/reagent or reaction_smiles columns.
         delimiter: CSV delimiter (default ',').
+        mapper:
+            Optional callable that receives the base ReactionRecord (parsed from the
+            assembled reaction SMILES) and the raw row dictionary. It should return
+            a ReactionRecord (possibly modified) or None to skip the row.
 
     Returns:
-        List[(str, dict)] where each tuple is (reaction_smiles, meta_dict).
+        List[ReactionRecord].
 
     Raises:
         ValueError if required columns are missing.
@@ -254,7 +265,7 @@ def load_csv(
         "reagent_columns", reagent_columns, allow_empty=True
     )
 
-    reactions: List[Tuple[str, Dict[str, Any]]] = []
+    reactions: List[ReactionRecord] = []
 
     with open(path, "r", encoding="utf-8", newline="") as f:
         reader = csv.DictReader(f, delimiter=delimiter)
@@ -265,27 +276,13 @@ def load_csv(
                 raise ValueError(
                     f"CSV is missing required column: {reaction_smiles_column}"
                 )
-            used_columns = {reaction_smiles_column}
         else:
             required = set(reactant_cols + product_cols + reagent_cols)
             missing_required = sorted(required - set(header))
             if missing_required:
                 missing_list = ", ".join(missing_required)
                 raise ValueError(f"CSV is missing required columns: {missing_list}")
-            used_columns = required
-
-        if meta_columns is None:
-            meta_cols = [col for col in header if col not in used_columns]
-        else:
-            meta_cols = _normalize_columns("meta_columns", meta_columns)
-            missing_meta = sorted(set(meta_cols) - set(header))
-            if missing_meta:
-                missing_list = ", ".join(missing_meta)
-                raise ValueError(
-                    f"CSV is missing requested metadata columns: {missing_list}"
-                )
-
-        for row in reader:
+        for idx, row in enumerate(reader):
             if combined_mode:
                 rxn_smiles = str(row.get(reaction_smiles_column, "") or "").strip()
                 if not rxn_smiles:
@@ -298,21 +295,42 @@ def load_csv(
                     continue  # skip empty rows
                 rxn_smiles = f"{reactants_block}>{reagents_block}>{products_block}"
 
-            meta = {col: row.get(col, "") for col in meta_cols}
-            reactions.append((rxn_smiles, meta))
+            record = parse_reaction_smiles(rxn_smiles, strict=False)
+            record.reaction_smiles = rxn_smiles
+            if not record.source:
+                record.source = "csv"
+            if record.source_ref is None:
+                record.source_ref = path
+
+            if mapper is not None:
+                mapped = mapper(record, row)
+                if mapped is None:
+                    continue
+                if not isinstance(mapped, ReactionRecord):
+                    raise ValueError(
+                        f"Mapper must return a ReactionRecord; got {type(mapped)!r} at row {idx}"
+                    )
+                record = mapped
+
+            if not isinstance(record.reaction_smiles, str) or not record.reaction_smiles.strip():
+                raise ValueError(
+                    f"Mapper must set a non-empty reaction_smiles at row {idx}"
+                )
+
+            reactions.append(record)
 
     return reactions
 
 
 def load_json(
     path: str,
-    mapper: Callable[[Any], Optional[Tuple[str, Dict[str, Any]]]],
-) -> List[Tuple[str, Dict[str, Any]]]:
+    mapper: Callable[[Any], Optional[ReactionRecord]],
+) -> List[ReactionRecord]:
     """
-    Load reaction SMILES from a JSON file using a user-provided mapper.
+    Load ReactionRecord instances from a JSON file using a user-provided mapper.
 
     The JSON payload is expected to be a list; each entry is passed to
-    ``mapper`` which should return ``(reaction_smiles, meta_dict)`` or ``None``
+    ``mapper`` which should return a populated ``ReactionRecord`` or ``None``
     to skip the entry.
     """
     with open(path, "r", encoding="utf-8") as f:
@@ -321,26 +339,20 @@ def load_json(
     if not isinstance(payload, list):
         raise ValueError("JSON payload must be a list.")
 
-    reactions: List[Tuple[str, Dict[str, Any]]] = []
+    reactions: List[ReactionRecord] = []
     for idx, item in enumerate(payload):
-        mapped = mapper(item)
-        if mapped is None:
+        record = mapper(item)
+        if record is None:
             continue
-        if not (isinstance(mapped, (tuple, list)) and len(mapped) == 2):
+        if not isinstance(record, ReactionRecord):
             raise ValueError(
-                f"Mapper must return (reaction_smiles, meta_dict); got {mapped!r} at index {idx}"
+                f"Mapper must return a ReactionRecord; got {type(record)!r} at index {idx}"
             )
-        rxn_smiles, meta = mapped
-        if not isinstance(rxn_smiles, str) or not rxn_smiles.strip():
+        if not isinstance(record.reaction_smiles, str) or not record.reaction_smiles.strip():
             raise ValueError(
-                f"Mapper must return a non-empty reaction_smiles at index {idx}"
+                f"Mapper must set a non-empty reaction_smiles at index {idx}"
             )
-        if meta is None:
-            meta = {}
-        if not isinstance(meta, dict):
-            raise ValueError(
-                f"Mapper must return dict metadata at index {idx}, got {type(meta)!r}"
-            )
-        reactions.append((rxn_smiles.strip(), meta))
+        record.reaction_smiles = record.reaction_smiles.strip()
+        reactions.append(record)
 
     return reactions

@@ -4,6 +4,7 @@ import json
 import pytest
 
 from chemrxn_cleaner.io import loader
+from chemrxn_cleaner.parser import parse_reaction_smiles
 from chemrxn_cleaner.types import ReactionRecord, YieldType
 
 
@@ -14,10 +15,16 @@ def test_load_uspto_without_meta(tmp_path):
 
     reactions = loader.load_uspto(str(path), keep_meta=False)
 
-    assert reactions == [
-        ("CCO.CC>O>CO", {}),
-        ("CCO>O>CC", {}),
-    ]
+    assert len(reactions) == 2
+    assert isinstance(reactions[0], ReactionRecord)
+    assert reactions[0].reaction_smiles == "CCO.CC>O>CO"
+    assert reactions[0].reactants == ["CCO", "CC"]
+    assert reactions[0].reagents == ["O"]
+    assert reactions[0].products == ["CO"]
+    assert reactions[0].source == "uspto"
+    assert reactions[0].source_ref == str(path)
+    assert reactions[0].extra_metadata == {}
+    assert reactions[1].reaction_smiles == "CCO>O>CC"
 
 
 def test_load_uspto_with_meta(tmp_path):
@@ -27,9 +34,13 @@ def test_load_uspto_with_meta(tmp_path):
 
     reactions = loader.load_uspto(str(path), keep_meta=True)
 
-    assert reactions == [
-        ("CCO>O>CO", {"fields": ["field1", "field2"]}),
-    ]
+    assert len(reactions) == 1
+    rec = reactions[0]
+    assert isinstance(rec, ReactionRecord)
+    assert rec.reaction_smiles == "CCO>O>CO"
+    assert rec.extra_metadata["fields"] == ["field1", "field2"]
+    assert rec.source == "uspto"
+    assert rec.source_ref == str(path)
 
 
 def test_load_csv_infers_meta(tmp_path):
@@ -41,17 +52,33 @@ def test_load_csv_infers_meta(tmp_path):
     path = tmp_path / "rxns.csv"
     path.write_text(data, encoding="utf-8")
 
+    def mapper(record, row):
+        record.extra_metadata["temp"] = row["temp"]
+        record.extra_metadata["note"] = row["note"]
+        record.reaction_id = row["note"]
+        return record
+
     reactions = loader.load_csv(
         str(path),
         reactant_columns=["reactant1", "reactant2"],
         reagent_columns=["reagent"],
         product_columns=["product"],
+        mapper=mapper,
     )
 
-    assert reactions == [
-        ("CCO.CCBr>NaOH>CCOCC", {"temp": "25C", "note": "batch1"}),
-        ("CCN>>CCNH2", {"temp": "", "note": "batch2"}),
-    ]
+    assert len(reactions) == 2
+    assert isinstance(reactions[0], ReactionRecord)
+    assert reactions[0].reaction_smiles == "CCO.CCBr>NaOH>CCOCC"
+    assert reactions[0].reactants == ["CCO", "CCBr"]
+    assert reactions[0].reagents == ["NaOH"]
+    assert reactions[0].products == ["CCOCC"]
+    assert reactions[0].reaction_id == "batch1"
+    assert reactions[0].extra_metadata == {"temp": "25C", "note": "batch1"}
+    assert reactions[1].reaction_smiles == "CCN>>CCNH2"
+    assert reactions[1].reactants == ["CCN"]
+    assert reactions[1].reagents == []
+    assert reactions[1].products == ["CCNH2"]
+    assert reactions[1].extra_metadata == {"temp": "", "note": "batch2"}
 
 
 def test_load_csv_custom_meta(tmp_path):
@@ -59,14 +86,23 @@ def test_load_csv_custom_meta(tmp_path):
     path = tmp_path / "rxn_single.csv"
     path.write_text(data, encoding="utf-8")
 
+    def mapper(record, row):
+        record.reaction_id = row["ref"]
+        record.extra_metadata["source"] = row["source"]
+        return record
+
     reactions = loader.load_csv(
         str(path),
         reactant_columns=["reactant"],
         product_columns=["product"],
-        meta_columns=["ref"],
+        mapper=mapper,
     )
 
-    assert reactions == [("A>>C", {"ref": "foo"})]
+    assert len(reactions) == 1
+    assert isinstance(reactions[0], ReactionRecord)
+    assert reactions[0].reaction_smiles == "A>>C"
+    assert reactions[0].reaction_id == "foo"
+    assert reactions[0].extra_metadata["source"] == "bar"
 
 
 def test_load_csv_combined_column(tmp_path):
@@ -74,12 +110,21 @@ def test_load_csv_combined_column(tmp_path):
     path = tmp_path / "rxn_combined.csv"
     path.write_text(data, encoding="utf-8")
 
+    def mapper(record, row):
+        record.extra_metadata["tag"] = row["tag"]
+        record.success = row["tag"] == "batch"
+        return record
+
     reactions = loader.load_csv(
         str(path),
         reaction_smiles_column="rxn_smiles",
+        mapper=mapper,
     )
 
-    assert reactions == [("A.B>C>D", {"tag": "batch"})]
+    assert len(reactions) == 1
+    assert reactions[0].reaction_smiles == "A.B>C>D"
+    assert reactions[0].extra_metadata["tag"] == "batch"
+    assert reactions[0].success is True
 
 
 def test_load_json_with_mapper(tmp_path):
@@ -93,14 +138,24 @@ def test_load_json_with_mapper(tmp_path):
     def mapper(entry):
         if entry.get("skip"):
             return None
-        return (
-            f"{entry['reactants']}>>{entry['products']}",
-            {"id": entry["meta"]["id"]},
+        record = parse_reaction_smiles(
+            f"{entry['reactants']}>>{entry['products']}", strict=False
         )
+        record.reaction_id = f"rxn-{entry['meta']['id']}"
+        record.extra_metadata["id"] = entry["meta"]["id"]
+        record.source = "json"
+        return record
 
     reactions = loader.load_json(str(path), mapper)
 
-    assert reactions == [("A.B>>C", {"id": 1})]
+    assert len(reactions) == 1
+    assert isinstance(reactions[0], ReactionRecord)
+    assert reactions[0].reaction_id == "rxn-1"
+    assert reactions[0].reaction_smiles == "A.B>>C"
+    assert reactions[0].reactants == ["A", "B"]
+    assert reactions[0].products == ["C"]
+    assert reactions[0].extra_metadata["id"] == 1
+    assert reactions[0].source == "json"
 
 
 def test_load_ord_returns_meta(monkeypatch):
