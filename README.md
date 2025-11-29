@@ -1,175 +1,135 @@
 # chemrxn-cleaner
 
-A lightweight toolkit for loading, cleaning, and standardizing organic reaction datasets before machine-learning or analytics workflows.
-
-## Prerequisites
-
-- Python 3.9+
-
-These dependencies are pulled in automatically when installing `chemrxn-cleaner`, with the exception of platform-specific RDKit wheels.
+Lightweight helpers for parsing, cleaning, filtering, and exporting organic reaction datasets before ML or analytics workflows.
 
 ## Installation
+
+- Python 3.9+
+- RDKit is required (platform-specific wheels are not bundled).
 
 ```bash
 pip install chemrxn-cleaner
 ```
 
-If you are working from a clone of this repository, install in editable mode to develop locally:
+Developing locally? Install in editable mode:
 
 ```bash
 pip install -e .
 ```
 
-## How to Use the Package
-
-ChemRxn-Cleaner aims to make cleaning reproducible. A typical workflow has five steps:
-
-1. Load reaction SMILES and metadata from USPTO `.rsmi` files or ORD protocol bundles.
-2. Parse the SMILES strings into structured `ReactionRecord` objects.
-3. Apply built-in or custom filters (length, element, metadata predicates, etc.).
-4. Canonicalize the surviving reactions to obtain consistent representations.
-5. Summarize the cleaning results or export the cleaned reactions downstream.
-
-### 1. Loading Reaction Data
+## Quick start
 
 ```python
-from chemrxn_cleaner.io.loader import load_uspto, load_csv, load_ord
+from chemrxn_cleaner.io.loader import load_uspto
+from chemrxn_cleaner import basic_cleaning_pipeline, reporter
 
-# USPTO .rsmi loader (metadata fields stored in extra_metadata["fields"])
+raw = load_uspto("data/sample.rsmi", keep_meta=True)
+cleaned = basic_cleaning_pipeline(raw)
+
+summary = reporter.summarize_cleaning(raw_reactions=raw, cleaned_reactions=cleaned)
+summary.pretty_print()
+```
+
+## Loading reaction data
+
+```python
+from chemrxn_cleaner.io.loader import load_uspto, load_csv, load_ord, load_json
+from chemrxn_cleaner.extractor import ord_procedure_yields_meta
+
+# USPTO .rsmi loader (optional metadata fields stored in extra_metadata["fields"])
 uspto_rxns = load_uspto("data/uspto_sample.rsmi", keep_meta=True)
 
-# CSV loader: choose which columns hold reactants/reagents/products
+# CSV loader: assemble reaction SMILES from column mappings
 csv_rxns = load_csv(
     "data/reactions.csv",
     reactant_columns=["reactant_a", "reactant_b"],
     reagent_columns=["catalyst"],
     product_columns=["product"],
-    # meta_columns is optional; if omitted, all other columns are included
 )
 
-# CSV loader with pre-built reaction SMILES column
+# CSV loader with a pre-built reaction_smiles column
 csv_rxns_prebuilt = load_csv(
     "data/reactions.csv",
     reaction_smiles_column="rxn_smiles",
 )
 
-# ORD dataset loader with optional metadata extraction; returns ReactionRecord objects
-from chemrxn_cleaner.extractor import ord_procedure_yields_meta
+# JSON loader with a custom mapper per entry
+json_rxns = load_json("data/reactions.json", mapper=lambda item: (
+    f"{item['reactants']}>>{item['products']}",
+    item.get("meta", {}),
+))
+
+# ORD dataset loader (returns populated ReactionRecord objects)
 ord_rxns = load_ord(
     "data/ord_dataset.pb.gz",
     meta_extractor=ord_procedure_yields_meta,
 )
 ```
 
-`load_uspto` and `load_csv` return lists of `(reaction_smiles, metadata_dict)` tuples, while `load_ord` now returns fully populated `ReactionRecord` objects (with `reaction_id`, yields, and basic conditions lifted into typed fields) that can be passed straight into the cleaning pipeline.
+`load_uspto`, `load_csv`, and `load_json` return `(reaction_smiles, metadata_dict)` tuples. `load_ord` returns fully populated `ReactionRecord` objects with `reaction_id`, yields, basic conditions (temperature, time, pressure, pH, atmosphere, scale), and `extra_metadata["reaction_index"]` set.
 
-### 2. Running the Built-in Cleaning Pipeline
+You can also register custom loaders and call them through the registry:
 
 ```python
-from chemrxn_cleaner import basic_cleaning_pipeline
+from chemrxn_cleaner.io import register_input_format, load_reactions
 
-cleaned_ord = basic_cleaning_pipeline(ord_rxns)
+def load_my_format(path: str):
+    return [("A>B>C", {"source": path})]
+
+register_input_format("myfmt", load_my_format)
+rxns = load_reactions("my_file.txt", fmt="myfmt")
 ```
 
-`basic_cleaning_pipeline` parses, filters, and canonicalizes every reaction using the default filter stack (`has_product`, `all_molecules_valid`). The result is a list of immutable `ReactionRecord` instances with `reactants`, `reagents`, `products`, and `extra_metadata` attributes.
-
-### 3. Custom Filters and Canonicalization Options
-
-The cleaning helpers are composable; you can control the filter order and canonicalization behavior explicitly:
+## Cleaning and filters
 
 ```python
-from chemrxn_cleaner.cleaner import clean_and_canonicalize
+from chemrxn_cleaner.cleaner import clean_reactions, clean_and_canonicalize
 from chemrxn_cleaner.filters import (
     default_filters,
     max_smiles_length,
     element_filter,
     meta_filter,
+    ElementFilterRule,
 )
-from chemrxn_cleaner.filters import ElementFilterRule
+from chemrxn_cleaner.utils import similarity_filter
 
 filters = default_filters() + [
     max_smiles_length(250),
     element_filter(
-        forbidList=ElementFilterRule(
-            reactantElements=[],
-            reagentElements=[],
-            productElements=["Cl", "Br"],
-        )
+        forbidList=ElementFilterRule([], ["Cl"], []),
     ),
-    meta_filter(lambda meta: meta.get("procedure", {}).get("setup.atmosphere") == "N2"),
+    meta_filter(lambda meta: meta.get("source") == "trusted"),
+    similarity_filter("c1ccccc1", role="reactant", threshold=0.6),
 ]
 
-cleaned_custom = clean_and_canonicalize(
-    ord_rxns,
+cleaned = clean_and_canonicalize(
+    rxn_smiles_list=uspto_rxns,
     filters=filters,
-    isomeric=False,      # drop stereochemistry if desired
-    drop_failed_parse=True,
+    isomeric=True,
 )
 ```
 
-Filters are simple callables accepting a `ReactionRecord` and returning `True`/`False`, so you can author domain-specific predicates without touching the core pipeline.
+- `clean_reactions` parses SMILES into `ReactionRecord` objects and applies filters.
+- `clean_and_canonicalize` also canonicalizes every molecule; `basic_cleaning_pipeline` is the default stack (`has_product`, `all_molecules_valid`, strict parsing, isomeric SMILES).
+- Filters are callables returning `True`/`False`; author your own to encode domain rules.
 
-### 4. Working with Metadata
-
-Metadata travels with each `ReactionRecord` through the pipeline. This makes it easy to slice cleaned reactions based on the original dataset context or to serialize extra descriptors:
-
-```python
-subset = [
-    rec for rec in cleaned_custom
-    if rec.extra_metadata.get("yields")
-    and rec.extra_metadata["yields"][0]["yield_percent"] > 80
-]
-```
-
-Custom metadata extractors (see `chemrxn_cleaner/extractor.py`) can capture procedure notes, yields, or any other ORD fields you care about.
-
-### 5. Reporting and Exporting
+## Reporting and exporting
 
 ```python
 from chemrxn_cleaner import reporter
+from chemrxn_cleaner.io import export_reaction_records_to_json, export_reaction_records_to_csv
 
-report = reporter.summarize_cleaning(ord_rxns, cleaned_custom)
+report = reporter.summarize_cleaning(raw, cleaned)
 report.pretty_print()
 
-# Export canonical reaction SMILES + metadata for downstream use
-import json
-with open("cleaned_ord.jsonl", "w", encoding="utf-8") as f:
-    for rec in cleaned_custom:
-        payload = {
-            "reactants": rec.reactants,
-            "reagents": rec.reagents,
-            "products": rec.products,
-            "extra_metadata": rec.extra_metadata,
-        }
-        f.write(json.dumps(payload) + "\n")
+export_reaction_records_to_json(cleaned, "cleaned.json")
+export_reaction_records_to_csv(cleaned, "cleaned.csv")
 ```
 
-## Quick Start
+## Working with `ReactionRecord`
 
-```python
-from chemrxn_cleaner.io.loader import load_uspto
-from chemrxn_cleaner import basic_cleaning_pipeline, reporter
+`ReactionRecord` holds the parsed reaction (`reactants`, `reagents`, `products`, `reaction_smiles`) plus optional metadata like yields, conditions, and arbitrary `extra_metadata`. Use `to_dict()`/`from_dict()` for serialization, and `show()` to render a reaction image when RDKit visualization is available.
 
-rxns = load_uspto("/path/to/file.rsmi", keep_meta=True)
-cleaned = basic_cleaning_pipeline(rxns)
+## Examples
 
-report = reporter.summarize_cleaning(rxns, cleaned)
-report.pretty_print()
-```
-
-## End-to-End Example Script
-
-The repository ships with `examples/clean_data_example.py`, a runnable walkthrough that ties everything together:
-
-1. Load USPTO `.rsmi` files and ORD `.pb.gz` datasets.
-2. Apply default + custom filters (length, element whitelist/blacklist, metadata predicates).
-3. Generate cleaning reports.
-4. Persist cleaned reactions to disk.
-
-Run it with:
-
-```bash
-python examples/clean_data_example.py
-```
-
-Use this script as a template—swap in your file paths, tweak the filter stack, and tailor the export code to match the format your downstream tools expect.
+An interactive walkthrough lives at `examples/example.ipynb`. Open it in Jupyter, swap in your own file paths, and adapt the filter stack for your dataset.
