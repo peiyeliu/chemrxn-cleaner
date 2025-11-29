@@ -27,7 +27,12 @@ classifiers = [
 ]
 
 [project.optional-dependencies]
-ord = ["ord-schema>=0.3.0"]
+dev = [
+    "pytest",
+    "coverage",
+    "black",
+]
+
 
 [project.urls]
 Homepage = "https://github.com/peiyeliu/chemrxn-cleaner"
