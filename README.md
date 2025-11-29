@@ -20,13 +20,19 @@ pip install -e .
 ## Quick start
 
 ```python
+from chemrxn_cleaner import basic_cleaning_pipeline, reporter, parse_reaction_smiles
 from chemrxn_cleaner.io.loader import load_uspto
-from chemrxn_cleaner import basic_cleaning_pipeline, reporter
 
-raw = load_uspto("data/sample.rsmi", keep_meta=True)
+raw_tuples = load_uspto("data/sample.rsmi", keep_meta=True)
+raw = []
+for smi, meta in raw_tuples:
+    rec = parse_reaction_smiles(smi, strict=False)
+    rec.extra_metadata.update(meta or {})
+    raw.append(rec)
+
 cleaned = basic_cleaning_pipeline(raw)
 
-summary = reporter.summarize_cleaning(raw_reactions=raw, cleaned_reactions=cleaned)
+summary = reporter.summarize_cleaning(raw_reactions=raw_tuples, cleaned_reactions=cleaned)
 summary.pretty_print()
 ```
 
@@ -35,9 +41,15 @@ summary.pretty_print()
 ```python
 from chemrxn_cleaner.io.loader import load_uspto, load_csv, load_ord, load_json
 from chemrxn_cleaner.extractor import ord_procedure_yields_meta
+from chemrxn_cleaner.parser import parse_reaction_smiles
 
 # USPTO .rsmi loader (optional metadata fields stored in extra_metadata["fields"])
-uspto_rxns = load_uspto("data/uspto_sample.rsmi", keep_meta=True)
+uspto_raw = load_uspto("data/uspto_sample.rsmi", keep_meta=True)
+uspto_rxns = []
+for smi, meta in uspto_raw:
+    rec = parse_reaction_smiles(smi, strict=False)
+    rec.extra_metadata.update(meta or {})
+    uspto_rxns.append(rec)
 
 # CSV loader: assemble reaction SMILES from column mappings
 csv_rxns = load_csv(
@@ -109,7 +121,7 @@ cleaned = clean_and_canonicalize(
 )
 ```
 
-- `clean_reactions` parses SMILES into `ReactionRecord` objects and applies filters.
+- `clean_reactions` accepts `ReactionRecord` objects (parses `reaction_smiles` if reactants/reagents/products are empty) and applies filters.
 - `clean_and_canonicalize` also canonicalizes every molecule; `basic_cleaning_pipeline` is the default stack (`has_product`, `all_molecules_valid`, strict parsing, isomeric SMILES).
 - Filters are callables returning `True`/`False`; author your own to encode domain rules.
 
