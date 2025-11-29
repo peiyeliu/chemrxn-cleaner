@@ -167,6 +167,17 @@ def load_ord(
             return None, YieldType.NONE
         return best_yield, YieldType.OTHER
 
+    def _extract_source_ref(reaction: dataset_pb2.Reaction) -> Optional[str]:
+        provenance = getattr(reaction, "provenance", None)
+        if provenance is None:
+            return None
+        
+        for attr in ("doi", "patent", "publication_url"):
+            value = getattr(provenance, attr, None)
+            if value:
+                return str(value)
+        return None
+
     for idx, rxn in enumerate(dataset.reactions):
         smi: Optional[str] = get_reaction_smiles(
             message=rxn,
@@ -179,7 +190,8 @@ def load_ord(
             record.reaction_smiles = smi
             record.reaction_id = getattr(rxn, "reaction_id", "") or ""
             record.source = "ord"
-            record.source_ref = path
+            record.source_file_path = path
+            record.source_ref = _extract_source_ref(rxn)
             record.extra_metadata["reaction_index"] = idx
 
             yield_value, yield_type = _extract_primary_yield(rxn)
