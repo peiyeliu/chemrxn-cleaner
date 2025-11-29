@@ -8,7 +8,7 @@ from .loader_registry import (
     get_input_format,
     load_reactions,
 )
-from .records import (
+from .writer import (
     export_reaction_records_to_json,
     export_reaction_records_to_csv,
 )

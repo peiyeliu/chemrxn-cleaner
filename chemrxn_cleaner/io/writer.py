@@ -1,4 +1,4 @@
-# chemrxn_cleaner/io/records.py
+# chemrxn_cleaner/io/writer.py
 """Utilities for serializing :class:`ReactionRecord` objects."""
 
 from __future__ import annotations
