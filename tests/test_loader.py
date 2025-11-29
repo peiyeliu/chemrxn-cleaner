@@ -20,7 +20,7 @@ def test_load_uspto_without_meta(tmp_path):
     assert reactions[0].reagents == ["O"]
     assert reactions[0].products == ["CO"]
     assert reactions[0].source == "uspto"
-    assert reactions[0].source_ref == str(path)
+    assert reactions[0].source_file_path == str(path)
     assert reactions[0].extra_metadata == {}
     assert reactions[1].reaction_smiles == "CCO>O>CC"
 
@@ -38,7 +38,7 @@ def test_load_uspto_with_meta(tmp_path):
     assert rec.reaction_smiles == "CCO>O>CO"
     assert rec.extra_metadata["fields"] == ["field1", "field2"]
     assert rec.source == "uspto"
-    assert rec.source_ref == str(path)
+    assert rec.source_file_path == str(path)
 
 
 def test_load_csv_infers_meta(tmp_path):
