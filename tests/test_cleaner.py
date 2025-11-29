@@ -27,7 +27,9 @@ def test_clean_reactions_attaches_metadata():
 
 def test_clean_reactions_raises_when_drop_disabled():
     rxns = [
-        ReactionRecord(reaction_smiles="invalid-format", extra_metadata={"source": "bad"}),
+        ReactionRecord(
+            reaction_smiles="invalid-format", extra_metadata={"source": "bad"}
+        ),
     ]
 
     with pytest.raises(ValueError):
