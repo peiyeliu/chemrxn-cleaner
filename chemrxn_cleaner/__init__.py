@@ -31,7 +31,6 @@ from .io import (
 from .io import loader, loader_registry
 from . import cleaner as _cleaner
 from . import reporter as _reporter
-from .extractor import ord_procedure_yields_meta
 
 from . import parser as _parser
 from .utils import similarity_filter
@@ -62,6 +61,4 @@ __all__ = [
     "load_reactions",
     "export_reaction_records_to_json",
     "export_reaction_records_to_csv",
-    # extractor
-    "ord_procedure_yields_meta",
 ]

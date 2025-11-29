@@ -1,8 +1,6 @@
 import types
 import json
 
-import pytest
-
 from chemrxn_cleaner.io import loader
 from chemrxn_cleaner.parser import parse_reaction_smiles
 from chemrxn_cleaner.types import ReactionRecord, YieldType

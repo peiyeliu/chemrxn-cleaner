@@ -35,6 +35,7 @@ class ReactionRecord:
     time_hours: Optional[float] = None
     pressure_bar: Optional[float] = None
     ph: Optional[float] = None
+    procedure: Dict[str, Any] = field(default_factory=dict)
 
     solvents: List[str] = field(default_factory=list)
     catalysts: List[str] = field(default_factory=list)
@@ -80,6 +81,7 @@ class ReactionRecord:
             "products": list(self.products),
             "atom_mapping": self.atom_mapping,
             "reaction_class": self.reaction_class,
+            "procedure": dict(self.procedure),
             "temperature_c": self.temperature_c,
             "time_hours": self.time_hours,
             "pressure_bar": self.pressure_bar,
@@ -129,6 +131,7 @@ class ReactionRecord:
             products=list(data.get("products", []) or []),
             atom_mapping=data.get("atom_mapping"),
             reaction_class=data.get("reaction_class"),
+            procedure=dict(data.get("procedure", {}) or {}),
             temperature_c=data.get("temperature_c"),
             time_hours=data.get("time_hours"),
             pressure_bar=data.get("pressure_bar"),
@@ -156,6 +159,8 @@ class ReactionRecord:
     def __post_init__(self) -> None:
         if self.extra_metadata is None:
             self.extra_metadata = {}
+        if self.procedure is None:
+            self.procedure = {}
 
     def show(
         self,

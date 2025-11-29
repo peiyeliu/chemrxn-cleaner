@@ -35,7 +35,6 @@ summary.pretty_print()
 
 ```python
 from chemrxn_cleaner.io.loader import load_uspto, load_csv, load_ord, load_json
-from chemrxn_cleaner.extractor import ord_procedure_yields_meta
 from chemrxn_cleaner.parser import parse_reaction_smiles
 
 # USPTO .rsmi loader (optional metadata fields stored in extra_metadata["fields"])
@@ -73,7 +72,6 @@ json_rxns = load_json("data/reactions.json", mapper=map_json_entry)
 # ORD dataset loader (returns populated ReactionRecord objects)
 ord_rxns = load_ord(
     "data/ord_dataset.pb.gz",
-    meta_extractor=ord_procedure_yields_meta,
 )
 ```
 

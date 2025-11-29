@@ -55,14 +55,10 @@ def clean_reactions(
         if record.extra_metadata is None:
             record.extra_metadata = {}
 
-        needs_parse = not (
-            record.reactants or record.reagents or record.products
-        )
+        needs_parse = not (record.reactants or record.reagents or record.products)
         if needs_parse:
             try:
-                parsed = parse_reaction_smiles(
-                    record.reaction_smiles, strict=strict
-                )
+                parsed = parse_reaction_smiles(record.reaction_smiles, strict=strict)
             except Exception:
                 if drop_failed_parse:
                     continue

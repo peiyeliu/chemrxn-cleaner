@@ -5,6 +5,8 @@ import csv
 import json
 
 from typing import Callable, List, Dict, Any, Optional, Tuple, Sequence
+from ord_schema.message_helpers import message_to_row
+from ord_schema.proto import reaction_pb2
 
 from ord_schema.message_helpers import (
     load_message,
@@ -171,12 +173,30 @@ def load_ord(
         provenance = getattr(reaction, "provenance", None)
         if provenance is None:
             return None
-        
+
         for attr in ("doi", "patent", "publication_url"):
             value = getattr(provenance, attr, None)
             if value:
                 return str(value)
         return None
+
+    def _extract_procedure(
+        reaction: reaction_pb2.Reaction,
+    ) -> Dict[str, Any]:
+        flat: Dict[str, Any] = message_to_row(reaction)
+        procedure_prefixes = (
+            "setup.",
+            "conditions.",
+            "workups.",
+            "workup.",
+            "notes.",
+            "observations.",
+        )
+        return {
+            k: v
+            for k, v in flat.items()
+            if any(k.startswith(pref) for pref in procedure_prefixes)
+        }
 
     for idx, rxn in enumerate(dataset.reactions):
         smi: Optional[str] = get_reaction_smiles(
@@ -200,6 +220,8 @@ def load_ord(
 
             for key, value in _extract_conditions(rxn).items():
                 setattr(record, key, value)
+
+            record.procedure = _extract_procedure(rxn)
 
             if meta_extractor is not None:
                 extra_meta = meta_extractor(rxn)
@@ -324,7 +346,10 @@ def load_csv(
                     )
                 record = mapped
 
-            if not isinstance(record.reaction_smiles, str) or not record.reaction_smiles.strip():
+            if (
+                not isinstance(record.reaction_smiles, str)
+                or not record.reaction_smiles.strip()
+            ):
                 raise ValueError(
                     f"Mapper must set a non-empty reaction_smiles at row {idx}"
                 )
@@ -360,7 +385,10 @@ def load_json(
             raise ValueError(
                 f"Mapper must return a ReactionRecord; got {type(record)!r} at index {idx}"
             )
-        if not isinstance(record.reaction_smiles, str) or not record.reaction_smiles.strip():
+        if (
+            not isinstance(record.reaction_smiles, str)
+            or not record.reaction_smiles.strip()
+        ):
             raise ValueError(
                 f"Mapper must set a non-empty reaction_smiles at index {idx}"
             )
