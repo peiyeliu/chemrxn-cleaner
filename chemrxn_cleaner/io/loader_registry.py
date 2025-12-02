@@ -3,12 +3,17 @@ from __future__ import annotations
 
 from typing import (
     Any,
+    Callable,
     Dict,
     Iterable,
     List,
+    Literal,
+    Optional,
     Protocol,
+    Sequence,
     Tuple,
     Union,
+    overload,
     runtime_checkable,
 )
 
@@ -117,6 +122,59 @@ def get_input_format(name: str) -> InputLoader:
         raise InputFormatError(
             f"Unknown input format '{key}'. " f"Available formats: {available}"
         ) from None
+
+
+@overload
+def load_reactions(
+    source: str, *, fmt: Literal["uspto"], keep_meta: bool = False
+) -> List[ReactionRecord]: ...
+
+
+@overload
+def load_reactions(
+    source: str,
+    *,
+    fmt: Literal["ord"],
+    generate_if_missing: bool = True,
+    allow_incomplete: bool = True,
+    canonical: bool = True,
+    meta_extractor: Optional[Callable[[Any], Dict[str, Any]]] = None,
+) -> List[ReactionRecord]: ...
+
+
+@overload
+def load_reactions(
+    source: str,
+    *,
+    fmt: Literal["csv"],
+    reactant_columns: Sequence[str] = (),
+    product_columns: Sequence[str] = (),
+    reagent_columns: Optional[Sequence[str]] = None,
+    reaction_smiles_column: Optional[str] = None,
+    delimiter: str = ",",
+    skip_lines: int = 0,
+    mapper: Optional[
+        Callable[[ReactionRecord, Dict[str, Any]], Optional[ReactionRecord]]
+    ] = None,
+) -> List[ReactionRecord]: ...
+
+
+@overload
+def load_reactions(
+    source: str,
+    *,
+    fmt: Literal["json"],
+    mapper: Callable[[Any], Optional[ReactionRecord]],
+) -> List[ReactionRecord]: ...
+
+
+@overload
+def load_reactions(
+    source: Any,
+    *,
+    fmt: str,
+    **kwargs: Any,
+) -> List[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]: ...
 
 
 def load_reactions(

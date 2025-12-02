@@ -127,13 +127,7 @@ def test_load_csv_combined_column(tmp_path):
 
 
 def test_load_csv_skips_initial_lines(tmp_path):
-    data = (
-        "#comment header\n"
-        "#skip me too\n"
-        "reactant,product\n"
-        "A,C\n"
-        "B,D\n"
-    )
+    data = "#comment header\n" "#skip me too\n" "reactant,product\n" "A,C\n" "B,D\n"
     path = tmp_path / "rxn_skip.csv"
     path.write_text(data, encoding="utf-8")
 
