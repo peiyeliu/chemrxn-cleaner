@@ -25,7 +25,13 @@ setup(
     url="https://github.com/peiyeliu/chemrxn-cleaner",
     packages=find_packages(exclude=("tests", "examples")),
     python_requires=">=3.9",
-    install_requires=["rdkit", "pandas>=1.5.0", "tqdm>=4.64.0", "ord-schema>=0.3.0"],
+    install_requires=[
+        "rdkit",
+        "pandas>=1.5.0",
+        "tqdm>=4.64.0",
+        "ord-schema>=0.3.0",
+        "torch>=1.12.0",
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
