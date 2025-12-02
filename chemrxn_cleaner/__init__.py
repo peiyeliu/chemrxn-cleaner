@@ -21,6 +21,7 @@ from .cleaner import (
     clean_and_canonicalize,
     basic_cleaning_pipeline,
 )
+from .ml import ForwardReactionDataset, records_to_dataframe, train_valid_test_split
 from .io import (
     register_input_format,
     get_input_format,
@@ -61,4 +62,8 @@ __all__ = [
     "load_reactions",
     "export_reaction_records_to_json",
     "export_reaction_records_to_csv",
+    # ml
+    "ForwardReactionDataset",
+    "records_to_dataframe",
+    "train_valid_test_split",
 ]
