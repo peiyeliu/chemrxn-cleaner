@@ -4,9 +4,9 @@ from __future__ import annotations
 
 from typing import Iterable, List, Optional
 
-from .types import ReactionRecord
-from .parser import parse_reaction_smiles, canonicalize_reaction
 from .filters import ReactionFilter, default_filters
+from .parser import canonicalize_reaction, parse_reaction_smiles
+from .types import ReactionRecord
 
 
 def clean_reactions(

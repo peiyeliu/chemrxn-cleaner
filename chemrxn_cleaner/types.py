@@ -1,7 +1,7 @@
 # chemrxn_cleaner/types.py
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import List, Dict, Any, Optional
+from typing import Any, Dict, List, Optional
 
 
 class YieldType(str, Enum):
@@ -58,7 +58,7 @@ class ReactionRecord:
     sanity_check_passed: bool = True
     warnings: List[str] = field(default_factory=list)
 
-    # Dataset management only – e.g. “train/valid/test/time_split”; never given to the model.
+    # Dataset management only – e.g. “train/valid/test/time_split”
     split: Optional[str] = None
 
     # ---- Extension hooks ----
@@ -190,7 +190,7 @@ class ReactionRecord:
 
         if jupyter:
             try:
-                from IPython.display import display, HTML
+                from IPython.display import HTML, display
             except ImportError:  # pragma: no cover - optional dependency
                 jupyter = False
             else:

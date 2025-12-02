@@ -1,6 +1,6 @@
 import pytest
 
-from chemrxn_cleaner.cleaner import clean_reactions, clean_and_canonicalize
+from chemrxn_cleaner.cleaner import clean_and_canonicalize, clean_reactions
 from chemrxn_cleaner.parser import parse_reaction_smiles
 from chemrxn_cleaner.types import ReactionRecord
 

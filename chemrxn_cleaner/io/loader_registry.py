@@ -30,7 +30,8 @@ class InputLoader(Protocol):
         ----------
         source:
             Any agreed-upon data source. Can be a path string, file object, DataFrame,
-            list, etc. Recommendation: most loaders should use a str path for easy CLI use.
+            list, etc.
+            Recommendation: most loaders should use a str path for easy CLI use.
         **kwargs:
             Extra configuration options (e.g., delimiter, column mapping).
 
@@ -74,7 +75,8 @@ def register_input_format(
     Raises
     ------
     InputFormatError
-        When name already exists and overwrite=False, or loader does not match the protocol.
+        When name already exists and overwrite=False
+        or loader does not match the protocol.
     """
     key = name.strip().lower()
     if not key:
@@ -82,15 +84,15 @@ def register_input_format(
 
     if key in _INPUT_FORMAT_REGISTRY and not overwrite:
         raise InputFormatError(
-            f"Input format '{key}' already exists. "
-            f"Use overwrite=True to replace it."
+            f"Input format '{key}' already exists. Use overwrite=True to replace it."
         )
 
     if not isinstance(loader, InputLoader):
         # Type check is intentionally loose but can help catch issues early
         raise InputFormatError(
             f"Loader for format '{key}' does not match InputLoader protocol. "
-            f"Expected callable(source, **kwargs) -> Iterable[ReactionRecord | Tuple[str, Dict[str, Any]]]."
+            f"Expected callable(source, **kwargs) -> "
+            f"Iterable[ReactionRecord | Tuple[str, Dict[str, Any]]]."
         )
 
     _INPUT_FORMAT_REGISTRY[key] = loader
@@ -120,7 +122,7 @@ def get_input_format(name: str) -> InputLoader:
     except KeyError:
         available = ", ".join(sorted(_INPUT_FORMAT_REGISTRY.keys())) or "<none>"
         raise InputFormatError(
-            f"Unknown input format '{key}'. " f"Available formats: {available}"
+            f"Unknown input format '{key}'. Available formats: {available}"
         ) from None
 
 
@@ -184,7 +186,8 @@ def load_reactions(
     **kwargs: Any,
 ) -> List[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]:
     """
-    Parse an external data source into ReactionRecord objects or (reaction_smiles, metadata) tuples using the given format.
+    Parse an external data source into ReactionRecord objects
+    or (reaction_smiles, metadata) tuples using the given format.
 
     Parameters
     ----------
@@ -213,10 +216,10 @@ def _register_builtin_formats() -> None:
     Can be called in __init__.py: loader_registry._register_builtin_formats()
     """
     from .loader import (
-        load_uspto,
-        load_ord,
         load_csv,
         load_json,
+        load_ord,
+        load_uspto,
     )
 
     register_input_format("uspto", load_uspto, overwrite=True)

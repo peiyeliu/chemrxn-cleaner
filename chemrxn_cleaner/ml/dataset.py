@@ -1,7 +1,9 @@
 # chemrxn_cleaner/ml/dataset.py
-from typing import List, Dict, Any
-from chemrxn_cleaner.types import ReactionRecord
+from typing import Any, Dict, List
+
 from torch.utils.data import Dataset
+
+from chemrxn_cleaner.types import ReactionRecord
 
 
 class ForwardReactionDataset(Dataset):

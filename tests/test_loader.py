@@ -1,5 +1,6 @@
-import types
 import json
+import types
+
 import pytest
 
 from chemrxn_cleaner.io import loader
@@ -81,7 +82,7 @@ def test_load_csv_infers_meta(tmp_path):
 
 
 def test_load_csv_custom_meta(tmp_path):
-    data = "reactant,reagent,product,ref,source\n" "A,,C,foo,bar\n"
+    data = "reactant,reagent,product,ref,source\nA,,C,foo,bar\n"
     path = tmp_path / "rxn_single.csv"
     path.write_text(data, encoding="utf-8")
 
@@ -105,7 +106,7 @@ def test_load_csv_custom_meta(tmp_path):
 
 
 def test_load_csv_combined_column(tmp_path):
-    data = "rxn_smiles,tag\n" "A.B>C>D,batch\n" ",empty\n"
+    data = "rxn_smiles,tag\nA.B>C>D,batch\n,empty\n"
     path = tmp_path / "rxn_combined.csv"
     path.write_text(data, encoding="utf-8")
 
@@ -127,7 +128,7 @@ def test_load_csv_combined_column(tmp_path):
 
 
 def test_load_csv_skips_initial_lines(tmp_path):
-    data = "#comment header\n" "#skip me too\n" "reactant,product\n" "A,C\n" "B,D\n"
+    data = "#comment header\n#skip me too\nreactant,product\nA,C\nB,D\n"
     path = tmp_path / "rxn_skip.csv"
     path.write_text(data, encoding="utf-8")
 

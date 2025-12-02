@@ -1,22 +1,21 @@
 # chemrxn_cleaner/io/loader.py
 
 from __future__ import annotations
+
 import csv
 import json
-
-from typing import Callable, List, Dict, Any, Optional, Tuple, Sequence
-from ord_schema.message_helpers import message_to_row
-from ord_schema.proto import reaction_pb2
+from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from ord_schema.message_helpers import (
-    load_message,
-    get_reaction_smiles,
     get_product_yield,
+    get_reaction_smiles,
+    load_message,
     message_to_row,
 )
-from ord_schema.proto import dataset_pb2
-from ..types import ReactionRecord, YieldType
+from ord_schema.proto import dataset_pb2, reaction_pb2
+
 from ..parser import parse_reaction_smiles
+from ..types import ReactionRecord, YieldType
 
 
 def load_uspto(
@@ -258,7 +257,7 @@ def load_csv(
             Optional column containing full reaction SMILES. If provided,
             reactant/product/reagent columns are ignored.
         delimiter: CSV delimiter (default ',').
-        skip_lines: Number of initial lines to skip before reading the header (default 0).
+        skip_lines: Number of initial lines to skip before reading the header.
         mapper:
             Optional callable that receives the base ReactionRecord (parsed from the
             assembled reaction SMILES) and the raw row dictionary. It should return
@@ -349,7 +348,8 @@ def load_csv(
                     continue
                 if not isinstance(mapped, ReactionRecord):
                     raise ValueError(
-                        f"Mapper must return a ReactionRecord; got {type(mapped)!r} at row {idx}"
+                        f"Mapper must return a ReactionRecord;"
+                        f"got {type(mapped)!r} at row {idx}"
                     )
                 record = mapped
 
@@ -390,7 +390,8 @@ def load_json(
             continue
         if not isinstance(record, ReactionRecord):
             raise ValueError(
-                f"Mapper must return a ReactionRecord; got {type(record)!r} at index {idx}"
+                f"Mapper must return a ReactionRecord;"
+                f"got {type(record)!r} at index {idx}"
             )
         if (
             not isinstance(record.reaction_smiles, str)

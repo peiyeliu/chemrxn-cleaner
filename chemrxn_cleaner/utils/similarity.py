@@ -6,9 +6,8 @@ from dataclasses import dataclass
 from functools import lru_cache
 from typing import Iterable, List, Literal, Union
 
-from rdkit import Chem
+from rdkit import Chem, DataStructs
 from rdkit.Chem import AllChem
-from rdkit import DataStructs
 
 from ..filters import ReactionFilter
 from ..types import ReactionRecord
@@ -78,7 +77,8 @@ def similarity_filter(
     Return a ReactionFilter for use in clean_reactions(..., filters=[...]).
 
     :param query_smiles: Target structure(s), one or more SMILES strings
-    :param role: Which molecular role(s) in the reaction to match; "any" checks all three
+    :param role: Which molecular role(s) in the reaction to match;
+                "any" checks all three
     :param threshold: Tanimoto similarity cutoff; >= threshold counts as a hit
     :param radius: Morgan fingerprint radius (2 -> ECFP4, 3 -> ECFP6)
     :param n_bits: Fingerprint bit vector length

@@ -1,14 +1,14 @@
-import pytest
 import pandas as pd
-
-torch = pytest.importorskip("torch")
+import pytest
 
 from chemrxn_cleaner import (
     ForwardReactionDataset,
+    ReactionRecord,
     records_to_dataframe,
     train_valid_test_split,
 )
-from chemrxn_cleaner.types import ReactionRecord
+
+torch = pytest.importorskip("torch")
 
 
 def test_records_to_dataframe_flattens_lists_and_preserves_meta():

@@ -1,8 +1,9 @@
 # chemrxn_cleaner/ml/utils.py
 from __future__ import annotations
+
+import random
 from dataclasses import asdict
 from typing import Iterable, List, Tuple
-import random
 
 import pandas as pd
 

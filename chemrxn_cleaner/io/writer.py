@@ -3,10 +3,10 @@
 
 from __future__ import annotations
 
-from pathlib import Path
-import json
 import csv
-from typing import Iterable, Sequence, List, Dict, Any
+import json
+from pathlib import Path
+from typing import Iterable, Sequence
 
 from ..types import ReactionRecord
 

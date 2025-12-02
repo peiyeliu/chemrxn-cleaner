@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, List, Sequence, Tuple, Dict, Any, Union
+from typing import Any, Dict, List, Sequence, Tuple, Union
 
 from .types import ReactionRecord
 

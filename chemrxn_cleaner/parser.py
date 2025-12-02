@@ -8,7 +8,6 @@ from rdkit import Chem
 
 from .types import ReactionRecord
 
-
 # ---------------------- basic SMILES tool functions ---------------------- #
 
 

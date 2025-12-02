@@ -1,7 +1,6 @@
 import pytest
 
-from chemrxn_cleaner.filters import meta_filter, element_filter
-from chemrxn_cleaner.filters import ElementFilterRule
+from chemrxn_cleaner.filters import ElementFilterRule, element_filter, meta_filter
 from chemrxn_cleaner.types import ReactionRecord
 
 
@@ -16,8 +15,10 @@ def _record_with_meta(meta):
 
 
 def test_meta_filter_uses_predicate_result():
-    predicate = lambda meta: meta.get("score", 0) > 0.5
-    filt = meta_filter(predicate)
+    def _predicate(meta):
+        return meta.get("score", 0) > 0.5
+
+    filt = meta_filter(_predicate)
 
     assert filt(_record_with_meta({"score": 0.7})) is True
     assert filt(_record_with_meta({"score": 0.1})) is False

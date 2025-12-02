@@ -32,11 +32,32 @@ dev = [
     "pytest",
     "coverage",
     "black",
+    "ruff",
+    "pre-commit",
 ]
 
 
 [project.urls]
 Homepage = "https://github.com/peiyeliu/chemrxn-cleaner"
+
+[tool.black]
+line-length = 88
+target-version = ["py39"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py39"
+extend-exclude = [
+    "dist",
+    "build",
+    "venv",
+    ".venv",
+    "chemrxn_cleaner.egg-info",
+    "examples/example.ipynb",
+    "setup.py"
+]
+[tool.ruff.lint]
+select = ["E", "F", "I"]  # lint + import sort
 
 [tool.setuptools]
 package-dir = {"" = "."}
