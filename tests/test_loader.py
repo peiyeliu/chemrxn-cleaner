@@ -1,5 +1,6 @@
 import types
 import json
+import pytest
 
 from chemrxn_cleaner.io import loader
 from chemrxn_cleaner.parser import parse_reaction_smiles
@@ -123,6 +124,42 @@ def test_load_csv_combined_column(tmp_path):
     assert reactions[0].reaction_smiles == "A.B>C>D"
     assert reactions[0].extra_metadata["tag"] == "batch"
     assert reactions[0].success is True
+
+
+def test_load_csv_skips_initial_lines(tmp_path):
+    data = (
+        "#comment header\n"
+        "#skip me too\n"
+        "reactant,product\n"
+        "A,C\n"
+        "B,D\n"
+    )
+    path = tmp_path / "rxn_skip.csv"
+    path.write_text(data, encoding="utf-8")
+
+    reactions = loader.load_csv(
+        str(path),
+        reactant_columns=["reactant"],
+        product_columns=["product"],
+        skip_lines=2,
+    )
+
+    assert len(reactions) == 2
+    assert reactions[0].reaction_smiles == "A>>C"
+    assert reactions[1].reaction_smiles == "B>>D"
+
+
+def test_load_csv_rejects_negative_skip(tmp_path):
+    path = tmp_path / "rxn_skip_negative.csv"
+    path.write_text("reactant,product\nA,C\n", encoding="utf-8")
+
+    with pytest.raises(ValueError):
+        loader.load_csv(
+            str(path),
+            reactant_columns=["reactant"],
+            product_columns=["product"],
+            skip_lines=-1,
+        )
 
 
 def test_load_json_with_mapper(tmp_path):

@@ -241,6 +241,7 @@ def load_csv(
     reagent_columns: Optional[Sequence[str]] = None,
     reaction_smiles_column: Optional[str] = None,
     delimiter: str = ",",
+    skip_lines: int = 0,
     mapper: Optional[
         Callable[[ReactionRecord, Dict[str, Any]], Optional[ReactionRecord]]
     ] = None,
@@ -257,6 +258,7 @@ def load_csv(
             Optional column containing full reaction SMILES. If provided,
             reactant/product/reagent columns are ignored.
         delimiter: CSV delimiter (default ',').
+        skip_lines: Number of initial lines to skip before reading the header (default 0).
         mapper:
             Optional callable that receives the base ReactionRecord (parsed from the
             assembled reaction SMILES) and the raw row dictionary. It should return
@@ -268,6 +270,9 @@ def load_csv(
     Raises:
         ValueError if required columns are missing.
     """
+
+    if skip_lines < 0:
+        raise ValueError("skip_lines must be non-negative.")
 
     def _normalize_columns(
         name: str, cols: Optional[Sequence[str]], allow_empty: bool = False
@@ -302,6 +307,8 @@ def load_csv(
     reactions: List[ReactionRecord] = []
 
     with open(path, "r", encoding="utf-8", newline="") as f:
+        for _ in range(skip_lines):
+            next(f, None)
         reader = csv.DictReader(f, delimiter=delimiter)
         header = reader.fieldnames or []
 
