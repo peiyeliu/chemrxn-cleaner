@@ -1,11 +1,11 @@
 # chemrxn-cleaner
 
-Lightweight helpers for parsing, cleaning, filtering, and exporting organic reaction datasets before ML or analytics workflows.
+Lightweight helpers for parsing, cleaning, filtering, reporting, and exporting organic reaction datasets before ML or analytics workflows.
 
 ## Installation
 
-- Python 3.9+
-- RDKit is required (platform-specific wheels are not bundled).
+- Python 3.9+ with RDKit available (platform-specific wheels are not bundled).
+- The package depends on `ord-schema`, `pandas`, `tqdm`, and `torch` (for the ML helpers).
 
 ```bash
 pip install chemrxn-cleaner
@@ -20,86 +20,109 @@ pip install -e .
 ## Quick start
 
 ```python
-from chemrxn_cleaner import basic_cleaning_pipeline, reporter, parse_reaction_smiles
-from chemrxn_cleaner.io.loader import load_uspto
+from chemrxn_cleaner import (
+    basic_cleaning_pipeline,
+    export_reaction_records_to_json,
+    export_reaction_records_to_csv,
+    load_reactions,
+)
+from chemrxn_cleaner import reporter
 
-raw = load_uspto("data/sample.rsmi", keep_meta=True)
+raw = load_reactions("data/sample.rsmi", fmt="uspto", keep_meta=True)
 
 cleaned = basic_cleaning_pipeline(raw)
 
 summary = reporter.summarize_cleaning(raw_reactions=raw, cleaned_reactions=cleaned)
 summary.pretty_print()
+
+export_reaction_records_to_json(cleaned, "cleaned.json")
+export_reaction_records_to_csv(cleaned, "cleaned.csv")
 ```
 
 ## Loading reaction data
 
-```python
-from chemrxn_cleaner.io.loader import load_uspto, load_csv, load_ord, load_json
-from chemrxn_cleaner.parser import parse_reaction_smiles
+Use the registry-driven `load_reactions(..., fmt=...)` helper or call the individual loaders directly. Built-in formats are auto-registered when the package is imported.
 
-# USPTO .rsmi loader (optional metadata fields stored in extra_metadata["fields"])
-uspto_rxns = load_uspto("data/uspto_sample.rsmi", keep_meta=True)
+- **USPTO .rsmi** (optionally keep tab-separated metadata in `extra_metadata["fields"]`):
 
-# CSV loader: assemble reaction SMILES from column mappings
-csv_rxns = load_csv(
-    "data/reactions.csv",
-    reactant_columns=["reactant_a", "reactant_b"],
-    reagent_columns=["catalyst"],
-    product_columns=["product"],
-    mapper=lambda record, row: (
-        record.extra_metadata.update({"temperature": row.get("temp_c")}) or record
-    ),
-)
+  ```python
+  from chemrxn_cleaner import load_reactions
 
-# CSV loader with a pre-built reaction_smiles column
-csv_rxns_prebuilt = load_csv(
-    "data/reactions.csv",
-    reaction_smiles_column="rxn_smiles",
-    mapper=lambda record, row: record,
-)
+  uspto_rxns = load_reactions("data/uspto_sample.rsmi", fmt="uspto", keep_meta=True)
+  ```
 
-The `mapper` callable receives `(record, row)` and can set optional attributes or skip rows by returning `None`.
+- **ORD .pb/.pb.gz** (populates `reaction_id`, basic conditions, yields, and `extra_metadata["reaction_index"]`):
 
-# JSON loader with a custom mapper per entry
-def map_json_entry(item):
-    rec = parse_reaction_smiles(f"{item['reactants']}>>{item['products']}", strict=False)
-    rec.source = "json"
-    rec.extra_metadata.update(item.get("meta", {}))
-    return rec
+  ```python
+  ord_rxns = load_reactions(
+      "data/ord_dataset.pb.gz",
+      fmt="ord",
+      generate_if_missing=True,
+      allow_incomplete=True,
+      canonical=True,
+  )
+  ```
 
-json_rxns = load_json("data/reactions.json", mapper=map_json_entry)
+- **CSV** (either assemble reaction SMILES from columns or read a pre-built column). The optional `mapper(record, row)` can enrich or skip rows by returning `None`.
 
-# ORD dataset loader (returns populated ReactionRecord objects)
-ord_rxns = load_ord(
-    "data/ord_dataset.pb.gz",
-)
-```
+  ```python
+  from chemrxn_cleaner import load_reactions
+  from chemrxn_cleaner.types import ReactionRecord
 
-`load_uspto`, `load_csv`, `load_json`, and `load_ord` return `ReactionRecord` objects. `load_ord` additionally populates `reaction_id`, yields, basic conditions (temperature, time, pressure, pH, atmosphere, scale), and `extra_metadata["reaction_index"]`.
+  csv_rxns = load_reactions(
+      "data/reactions.csv",
+      fmt="csv",
+      reactant_columns=["reactant_a", "reactant_b"],
+      reagent_columns=["catalyst"],
+      product_columns=["product"],
+      mapper=lambda record, row: (
+          record.extra_metadata.update({"temperature": row.get("temp_c")}) or record
+      ),
+  )
 
-You can also register custom loaders and call them through the registry:
+  csv_rxns_prebuilt = load_reactions(
+      "data/reactions.csv",
+      fmt="csv",
+      reaction_smiles_column="rxn_smiles",
+  )
+  ```
 
-```python
-from chemrxn_cleaner.io import register_input_format, load_reactions
+- **JSON** (supply a mapper per entry):
 
-def load_my_format(path: str):
-    return [("A>B>C", {"source": path})]
+  ```python
+  from chemrxn_cleaner import load_reactions
+  from chemrxn_cleaner.parser import parse_reaction_smiles
 
-register_input_format("myfmt", load_my_format)
-rxns = load_reactions("my_file.txt", fmt="myfmt")
-```
+  def map_json_entry(item):
+      rec = parse_reaction_smiles(f"{item['reactants']}>>{item['products']}", strict=False)
+      rec.source = "json"
+      rec.extra_metadata.update(item.get("meta", {}))
+      return rec
+
+  json_rxns = load_reactions("data/reactions.json", fmt="json", mapper=map_json_entry)
+  ```
+
+- **Custom formats**: Register your own loader and call it through the registry.
+
+  ```python
+  from chemrxn_cleaner import load_reactions, register_input_format
+  from chemrxn_cleaner.types import ReactionRecord
+
+  def load_my_format(path: str):
+      rec = ReactionRecord(reaction_smiles="A>B>C", source="myfmt")
+      return [rec]
+
+  register_input_format("myfmt", load_my_format)
+  rxns = load_reactions("my_file.txt", fmt="myfmt")
+  ```
 
 ## Cleaning and filters
 
+`clean_reactions` parses missing reactant/reagent/product lists, applies filters, and optionally drops failed parses. `clean_and_canonicalize` also canonicalizes every SMILES; `basic_cleaning_pipeline` wraps the default stack (`has_product`, `all_molecules_valid`, strict parsing, isomeric SMILES).
+
 ```python
-from chemrxn_cleaner.cleaner import clean_reactions, clean_and_canonicalize
-from chemrxn_cleaner.filters import (
-    default_filters,
-    max_smiles_length,
-    element_filter,
-    meta_filter,
-    ElementFilterRule,
-)
+from chemrxn_cleaner import clean_and_canonicalize, default_filters, max_smiles_length
+from chemrxn_cleaner.filters import ElementFilterRule, element_filter, meta_filter
 from chemrxn_cleaner.utils import similarity_filter
 
 filters = default_filters() + [
@@ -118,17 +141,15 @@ cleaned = clean_and_canonicalize(
 )
 ```
 
-- `clean_reactions` accepts `ReactionRecord` objects (parses `reaction_smiles` if reactants/reagents/products are empty) and applies filters.
-- `clean_and_canonicalize` also canonicalizes every molecule; `basic_cleaning_pipeline` is the default stack (`has_product`, `all_molecules_valid`, strict parsing, isomeric SMILES).
-- Filters are callables returning `True`/`False`; author your own to encode domain rules.
+Filters are simple callables returning `True`/`False`. Compose `meta_filter`, `element_filter`, `max_smiles_length`, `similarity_filter`, or author your own to encode domain rules.
 
 ## Reporting and exporting
 
 ```python
 from chemrxn_cleaner import reporter
-from chemrxn_cleaner.io import export_reaction_records_to_json, export_reaction_records_to_csv
+from chemrxn_cleaner import export_reaction_records_to_json, export_reaction_records_to_csv
 
-report = reporter.summarize_cleaning(raw, cleaned)
+report = reporter.summarize_cleaning(raw_reactions=raw, cleaned_reactions=cleaned)
 report.pretty_print()
 
 export_reaction_records_to_json(cleaned, "cleaned.json")
@@ -137,8 +158,29 @@ export_reaction_records_to_csv(cleaned, "cleaned.csv")
 
 ## Working with `ReactionRecord`
 
-`ReactionRecord` holds the parsed reaction (`reactants`, `reagents`, `products`, `reaction_smiles`) plus optional metadata like yields, conditions, and arbitrary `extra_metadata`. Use `to_dict()`/`from_dict()` for serialization, and `show()` to render a reaction image when RDKit visualization is available.
+`ReactionRecord` stores the parsed reaction (`reaction_smiles`, `reactants`, `reagents`, `products`) plus identifiers (`reaction_id`, `source`, `source_ref`, `source_file_path`), optional conditions (`temperature_c`, `time_hours`, `pressure_bar`, `ph`, `solvents`, `catalysts`, `bases`, `additives`, `atmosphere`, `scale_mmol`), yields (`yield_value`, `yield_type`), success/selectivity flags, and arbitrary `extra_metadata`. Use `to_dict()`/`from_dict()` for serialization, and `show()` to render a reaction image when RDKit visualization is available.
+
+## ML utilities
+
+- `records_to_dataframe` converts ReactionRecords to a pandas DataFrame for quick EDA/export.
+- `train_valid_test_split` produces a deterministic random split.
+- `ForwardReactionDataset` is a minimal PyTorch `Dataset` for forward prediction; each record should expose `reactant_smiles`, `reagent_smiles`, and `product_smiles` attributes if you plan to use it with a model.
+
+```python
+from chemrxn_cleaner import ForwardReactionDataset, records_to_dataframe, train_valid_test_split
+
+df = records_to_dataframe(cleaned)
+train, valid, test = train_valid_test_split(cleaned, seed=123)
+
+for r in cleaned:
+    r.reactant_smiles = r.reactants
+    r.reagent_smiles = r.reagents
+    r.product_smiles = r.products
+
+dataset = ForwardReactionDataset(train, use_agents=True)
+example = dataset[0]
+```
 
 ## Examples
 
-An interactive walkthrough lives at `examples/example.ipynb`. Open it in Jupyter, swap in your own file paths, and adapt the filter stack for your dataset.
+An interactive walkthrough lives at `examples/example.ipynb`. It demonstrates loading ORD, USPTO, JSON, and CSV datasets, applying filter stacks (including similarity filtering), and exporting cleaned reactions. Open it in Jupyter and swap in your own file paths to mirror the workflows.
