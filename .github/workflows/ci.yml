@@ -10,6 +10,10 @@ jobs:
   test:
     name: Format, Test, Coverage
     runs-on: ubuntu-latest
+    env:
+      PIP_INDEX_URL: https://download.pytorch.org/whl/cpu
+      PIP_EXTRA_INDEX_URL: https://pypi.org/simple
+      PIP_NO_CACHE_DIR: "1"
 
     strategy:
       fail-fast: false
