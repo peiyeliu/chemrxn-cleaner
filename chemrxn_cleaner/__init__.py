@@ -8,6 +8,7 @@ from .cleaner import (
     basic_cleaning_pipeline,
     clean_and_canonicalize,
     clean_reactions,
+    clean_reactions_with_report,
 )
 from .filters import (
     ReactionFilter,
@@ -50,6 +51,7 @@ __all__ = [
     "similarity_filter",
     # cleaner
     "clean_reactions",
+    "clean_reactions_with_report",
     "clean_and_canonicalize",
     "basic_cleaning_pipeline",
     # io

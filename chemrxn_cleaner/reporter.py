@@ -3,12 +3,36 @@
 from __future__ import annotations
 
 import logging
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any, Dict, List, Sequence, Tuple, Union
 
 from .types import ReactionRecord
 
 logger = logging.getLogger(__name__)
+
+
+@dataclass
+class FilterStats:
+    """
+    Stats for a specific filter
+    """
+
+    name: str
+    applied: int = 0
+    passed: int = 0
+    failed: int = 0
+
+
+@dataclass
+class CleaningStats:
+    """
+    Stats for the overall Cleaning process
+    """
+
+    n_input: int = 0
+    n_output: int = 0
+    n_failed_parse: int = 0
+    per_filter: Dict[str, FilterStats] = field(default_factory=dict)
 
 
 @dataclass

@@ -121,7 +121,12 @@ Use the registry-driven `load_reactions(..., fmt=...)` helper or call the indivi
 `clean_reactions` parses missing reactant/reagent/product lists, applies filters, and optionally drops failed parses. `clean_and_canonicalize` also canonicalizes every SMILES; `basic_cleaning_pipeline` wraps the default stack (`has_product`, `all_molecules_valid`, strict parsing, isomeric SMILES).
 
 ```python
-from chemrxn_cleaner import clean_and_canonicalize, default_filters, max_smiles_length
+from chemrxn_cleaner import (
+    clean_and_canonicalize,
+    clean_reactions_with_report,
+    default_filters,
+    max_smiles_length,
+)
 from chemrxn_cleaner.filters import ElementFilterRule, element_filter, meta_filter
 from chemrxn_cleaner.utils import similarity_filter
 
@@ -139,6 +144,9 @@ cleaned = clean_and_canonicalize(
     filters=filters,
     isomeric=True,
 )
+
+# Get a per-filter report alongside the cleaned list
+cleaned, stats = clean_reactions_with_report(uspto_rxns, filters=filters)
 ```
 
 Filters are simple callables returning `True`/`False`. Compose `meta_filter`, `element_filter`, `max_smiles_length`, `similarity_filter`, or author your own to encode domain rules.
