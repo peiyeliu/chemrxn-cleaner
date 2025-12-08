@@ -22,18 +22,20 @@ pip install -e .
 ```python
 from chemrxn_cleaner import (
     basic_cleaning_pipeline,
+    clean_reactions_with_report,
     export_reaction_records_to_json,
     export_reaction_records_to_csv,
     load_reactions,
 )
-from chemrxn_cleaner import reporter
 
 raw = load_reactions("data/sample.rsmi", fmt="uspto", keep_meta=True)
 
 cleaned = basic_cleaning_pipeline(raw)
+print(f"Kept {len(cleaned)}/{len(raw)} reactions after cleaning")
 
-summary = reporter.summarize_cleaning(raw_reactions=raw, cleaned_reactions=cleaned)
-summary.pretty_print()
+# Need per-filter stats? Call the reporting variant instead:
+cleaned_with_report, stats = clean_reactions_with_report(raw)
+print(f"Failed parses: {stats.n_failed_parse}, dropped: {stats.n_input - stats.n_output}")
 
 export_reaction_records_to_json(cleaned, "cleaned.json")
 export_reaction_records_to_csv(cleaned, "cleaned.csv")
@@ -153,12 +155,16 @@ Filters are simple callables returning `True`/`False`. Compose `meta_filter`, `e
 
 ## Reporting and exporting
 
+Use `clean_reactions_with_report` to capture filter-level counters, failed parse counts, and the final number of reactions kept.
+
 ```python
-from chemrxn_cleaner import reporter
+from chemrxn_cleaner import clean_reactions_with_report
 from chemrxn_cleaner import export_reaction_records_to_json, export_reaction_records_to_csv
 
-report = reporter.summarize_cleaning(raw_reactions=raw, cleaned_reactions=cleaned)
-report.pretty_print()
+cleaned, stats = clean_reactions_with_report(raw, filters=filters)
+print(f"Input: {stats.n_input}, output: {stats.n_output}, failed_parse: {stats.n_failed_parse}")
+for name, fstats in stats.per_filter.items():
+    print(f"{name}: applied={fstats.applied}, passed={fstats.passed}, failed={fstats.failed}")
 
 export_reaction_records_to_json(cleaned, "cleaned.json")
 export_reaction_records_to_csv(cleaned, "cleaned.csv")
