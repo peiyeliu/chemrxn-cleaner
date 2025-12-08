@@ -168,6 +168,12 @@ for name, fstats in stats.per_filter.items():
 
 export_reaction_records_to_json(cleaned, "cleaned.json")
 export_reaction_records_to_csv(cleaned, "cleaned.csv")
+
+# Combine stats from parallel cleaning runs
+from chemrxn_cleaner.reporter import CleaningStats
+
+combined_stats = CleaningStats.combine([stats_worker_1, stats_worker_2, stats_worker_3])
+print(combined_stats.n_input, combined_stats.n_output)
 ```
 
 ## Working with `ReactionRecord`

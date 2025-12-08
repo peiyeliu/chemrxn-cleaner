@@ -28,6 +28,7 @@ from .io import (
 )
 from .ml import ForwardReactionDataset, records_to_dataframe, train_valid_test_split
 from .parser import canonicalize_reaction, parse_reaction_smiles
+from .reporter import CleaningStats, FilterStats
 from .types import ReactionRecord
 from .utils import similarity_filter
 
@@ -40,6 +41,9 @@ __all__ = [
     # parser
     "parse_reaction_smiles",
     "canonicalize_reaction",
+    # reporting
+    "CleaningStats",
+    "FilterStats",
     # filters
     "ReactionFilter",
     "has_product",
