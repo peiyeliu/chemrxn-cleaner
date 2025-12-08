@@ -121,4 +121,5 @@ def similarity_filter(
 
         return False
 
+    _filter.__name__ = "similarity_filter"
     return _filter

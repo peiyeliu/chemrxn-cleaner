@@ -91,6 +91,7 @@ def max_smiles_length(max_len: int) -> ReactionFilter:
                 return False
         return True
 
+    _filter.__name__ = f"max_smiles_length({max_len})"
     return _filter
 
 
@@ -153,6 +154,7 @@ def element_filter(
             and _check_molecules(record.products, allowed_products, forbidden_products)
         )
 
+    _filter.__name__ = "element_filter"
     return _filter
 
 
@@ -174,6 +176,8 @@ def meta_filter(predicate: Callable[[Dict[str, Any]], bool]) -> ReactionFilter:
             # Treat predicate errors as a failed filter match
             return False
 
+    pred_name = getattr(predicate, "__name__", predicate.__class__.__name__)
+    _filter.__name__ = f"meta_filter({pred_name})"
     return _filter
 
 

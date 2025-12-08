@@ -5,6 +5,7 @@ from chemrxn_cleaner.cleaner import (
     clean_reactions,
     clean_reactions_with_report,
 )
+from chemrxn_cleaner.filters import max_smiles_length
 from chemrxn_cleaner.parser import parse_reaction_smiles
 from chemrxn_cleaner.reporter import CleaningStats, FilterStats
 from chemrxn_cleaner.types import ReactionRecord
@@ -151,3 +152,22 @@ def test_cleaning_stats_summary_includes_filters():
     assert lines[2] == "  a_filter: applied=4, passed=3, failed=1"
     assert lines[3] == "  b_filter: applied=2, passed=1, failed=1"
     assert str(stats) == summary
+
+
+def test_filter_factory_sets_name_for_stats():
+    rxns = [
+        parse_reaction_smiles("CCO>>CCO"),
+        parse_reaction_smiles("CCCCCC>>CC"),
+    ]
+
+    cleaned, stats = clean_reactions_with_report(
+        rxn_smiles_list=rxns, filters=[max_smiles_length(5)]
+    )
+
+    assert len(cleaned) == 1
+    assert "_filter" not in stats.per_filter
+    name = "max_smiles_length(5)"
+    assert name in stats.per_filter
+    assert stats.per_filter[name].applied == 2
+    assert stats.per_filter[name].passed == 1
+    assert stats.per_filter[name].failed == 1
