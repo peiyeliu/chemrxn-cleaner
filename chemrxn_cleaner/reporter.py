@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import logging
 from dataclasses import dataclass
 from typing import Any, Dict, List, Sequence, Tuple, Union
 
 from .types import ReactionRecord
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -101,6 +104,11 @@ def summarize_cleaning(
         It does not break down drop reasons by individual filters.
         (That can be added later if we track per-filter decisions.)
     """
+    logger.info(
+        "Summarizing cleaning results (before=%d, after=%d)",
+        len(raw_reactions),
+        len(cleaned_reactions),
+    )
     total_before = len(raw_reactions)
     total_after = len(cleaned_reactions)
 

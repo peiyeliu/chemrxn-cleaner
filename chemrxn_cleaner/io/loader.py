@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 from typing import Any, Callable, Dict, List, Optional, Sequence, Tuple
 
 from ord_schema.message_helpers import (
@@ -16,6 +17,8 @@ from ord_schema.proto import dataset_pb2, reaction_pb2
 
 from ..parser import parse_reaction_smiles
 from ..types import ReactionRecord, YieldType
+
+logger = logging.getLogger(__name__)
 
 
 def load_uspto(
@@ -39,6 +42,7 @@ def load_uspto(
     """
     reactions: List[ReactionRecord] = []
 
+    logger.info("Loading USPTO .rsmi file from %s", path)
     with open(path, "r", encoding="utf-8") as f:
         for line in f:
             line = line.strip()
@@ -60,6 +64,7 @@ def load_uspto(
 
             reactions.append(record)
 
+    logger.info("Loaded %d reactions from USPTO file %s", len(reactions), path)
     return reactions
 
 
@@ -85,6 +90,14 @@ def load_ord(
     Returns:
         A list of ReactionRecord objects with metadata + basic conditions populated.
     """
+    logger.info(
+        "Loading ORD dataset from %s (generate_if_missing=%s, allow_incomplete=%s, "
+        "canonical=%s)",
+        path,
+        generate_if_missing,
+        allow_incomplete,
+        canonical,
+    )
     dataset = load_message(path, dataset_pb2.Dataset)
     rxn_records: List[ReactionRecord] = []
 
@@ -197,13 +210,24 @@ def load_ord(
             if any(k.startswith(pref) for pref in procedure_prefixes)
         }
 
+    logger.debug(
+        "Dataset contains %d reactions (path=%s)", len(dataset.reactions), path
+    )
     for idx, rxn in enumerate(dataset.reactions):
-        smi: Optional[str] = get_reaction_smiles(
-            message=rxn,
-            generate_if_missing=generate_if_missing,
-            allow_incomplete=allow_incomplete,
-            canonical=canonical,
-        )
+        try:
+            smi: Optional[str] = get_reaction_smiles(
+                message=rxn,
+                generate_if_missing=generate_if_missing,
+                allow_incomplete=allow_incomplete,
+                canonical=canonical,
+            )
+        except Exception:
+            logger.exception(
+                "Failed to extract reaction SMILES for reaction %s at index %d",
+                getattr(rxn, "reaction_id", "") or "<unknown>",
+                idx,
+            )
+            raise
         if smi:
             record = parse_reaction_smiles(smi, strict=False)
             record.reaction_smiles = smi
@@ -228,7 +252,12 @@ def load_ord(
                     record.extra_metadata.update(extra_meta)
 
             rxn_records.append(record)
+        else:
+            logger.debug(
+                "Skipping reaction at index %d due to missing reaction SMILES.", idx
+            )
 
+    logger.info("Loaded %d reactions from ORD dataset %s", len(rxn_records), path)
     return rxn_records
 
 
@@ -305,6 +334,13 @@ def load_csv(
 
     reactions: List[ReactionRecord] = []
 
+    logger.info(
+        "Loading CSV reactions from %s (combined_mode=%s, delimiter=%r, skip_lines=%d)",
+        path,
+        combined_mode,
+        delimiter,
+        skip_lines,
+    )
     with open(path, "r", encoding="utf-8", newline="") as f:
         for _ in range(skip_lines):
             next(f, None)
@@ -326,12 +362,14 @@ def load_csv(
             if combined_mode:
                 rxn_smiles = str(row.get(reaction_smiles_column, "") or "").strip()
                 if not rxn_smiles:
+                    logger.debug("Skipping row %d: empty reaction_smiles column", idx)
                     continue
             else:
                 reactants_block = _join_smiles(row, reactant_cols)
                 reagents_block = _join_smiles(row, reagent_cols)
                 products_block = _join_smiles(row, product_cols)
                 if not (reactants_block or reagents_block or products_block):
+                    logger.debug("Skipping row %d: no SMILES data found", idx)
                     continue  # skip empty rows
                 rxn_smiles = f"{reactants_block}>{reagents_block}>{products_block}"
 
@@ -363,6 +401,7 @@ def load_csv(
 
             reactions.append(record)
 
+    logger.info("Loaded %d reactions from CSV %s", len(reactions), path)
     return reactions
 
 
@@ -377,6 +416,7 @@ def load_json(
     ``mapper`` which should return a populated ``ReactionRecord`` or ``None``
     to skip the entry.
     """
+    logger.info("Loading JSON reactions from %s", path)
     with open(path, "r", encoding="utf-8") as f:
         payload = json.load(f)
 
@@ -403,4 +443,5 @@ def load_json(
         record.reaction_smiles = record.reaction_smiles.strip()
         reactions.append(record)
 
+    logger.info("Loaded %d reactions from JSON %s", len(reactions), path)
     return reactions

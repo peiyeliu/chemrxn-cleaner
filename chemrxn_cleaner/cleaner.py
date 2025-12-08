@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Iterable, List, Optional
 
 from .filters import ReactionFilter, default_filters
 from .parser import canonicalize_reaction, parse_reaction_smiles
 from .types import ReactionRecord
+
+logger = logging.getLogger(__name__)
 
 
 def clean_reactions(
@@ -45,10 +48,18 @@ def clean_reactions(
     if filters is None:
         filters = default_filters()
 
+    logger.info(
+        "Starting cleaning pipeline (drop_failed_parse=%s, strict=%s, filters=%d)",
+        drop_failed_parse,
+        strict,
+        len(filters),
+    )
+
     cleaned: List[ReactionRecord] = []
 
-    for rxn_entry in rxn_smiles_list:
+    for idx, rxn_entry in enumerate(rxn_smiles_list):
         if rxn_entry is None:
+            logger.debug("Skipping None reaction entry at index %d", idx)
             continue
 
         record = rxn_entry
@@ -59,8 +70,14 @@ def clean_reactions(
         if needs_parse:
             try:
                 parsed = parse_reaction_smiles(record.reaction_smiles, strict=strict)
-            except Exception:
+            except Exception as exc:
                 if drop_failed_parse:
+                    logger.warning(
+                        "Dropping reaction at index %d: failed to parse reaction"
+                        "(%s)",
+                        idx,
+                        exc,
+                    )
                     continue
                 raise
             record.reaction_smiles = parsed.reaction_smiles
@@ -69,14 +86,23 @@ def clean_reactions(
             record.products = parsed.products
 
         keep = True
+        failing_filter = None
         for f in filters:
             if not f(record):
                 keep = False
+                failing_filter = getattr(f, "__name__", f.__class__.__name__)
                 break
 
         if keep:
             cleaned.append(record)
+        else:
+            logger.debug(
+                "Reaction %s dropped by filter %s",
+                record.reaction_id or f"idx-{idx}",
+                failing_filter,
+            )
 
+    logger.info("Cleaning finished: kept %d reactions", len(cleaned))
     return cleaned
 
 
@@ -118,9 +144,17 @@ def clean_and_canonicalize(
         strict=strict,
     )
 
+    logger.info("Canonicalizing %d reactions (isomeric=%s)", len(cleaned), isomeric)
     canon_records: List[ReactionRecord] = []
     for rec in cleaned:
-        canon_records.append(canonicalize_reaction(rec, isomeric=isomeric))
+        try:
+            canon_records.append(canonicalize_reaction(rec, isomeric=isomeric))
+        except Exception:
+            logger.exception(
+                "Canonicalization failed for reaction %s",
+                rec.reaction_id or rec.reaction_smiles or "<unknown>",
+            )
+            raise
 
     return canon_records
 

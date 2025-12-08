@@ -1,6 +1,7 @@
 # chemrxn_cleaner/io/loader_registry.py
 from __future__ import annotations
 
+import logging
 from typing import (
     Any,
     Callable,
@@ -18,6 +19,8 @@ from typing import (
 )
 
 from ..types import ReactionRecord
+
+logger = logging.getLogger(__name__)
 
 
 @runtime_checkable
@@ -96,6 +99,7 @@ def register_input_format(
         )
 
     _INPUT_FORMAT_REGISTRY[key] = loader
+    logger.debug("Registered input format '%s' (overwrite=%s)", key, overwrite)
 
 
 def get_input_format(name: str) -> InputLoader:
@@ -206,6 +210,7 @@ def load_reactions(
     -------
     List[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]
     """
+    logger.info("Loading reactions using format '%s'", fmt)
     loader = get_input_format(fmt)
     return list(loader(source, **kwargs))
 

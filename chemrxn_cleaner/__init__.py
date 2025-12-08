@@ -1,7 +1,8 @@
 # chemrxn_cleaner/__init__.py
 
-
 __version__ = "0.1.0"
+
+import logging
 
 from .cleaner import (
     basic_cleaning_pipeline,
@@ -28,6 +29,9 @@ from .ml import ForwardReactionDataset, records_to_dataframe, train_valid_test_s
 from .parser import canonicalize_reaction, parse_reaction_smiles
 from .types import ReactionRecord
 from .utils import similarity_filter
+
+# Avoid "No handler found" warnings if the host app has not configured logging.
+logging.getLogger(__name__).addHandler(logging.NullHandler())
 
 __all__ = [
     # types

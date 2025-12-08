@@ -5,10 +5,13 @@ from __future__ import annotations
 
 import csv
 import json
+import logging
 from pathlib import Path
 from typing import Iterable, Sequence
 
 from ..types import ReactionRecord
+
+logger = logging.getLogger(__name__)
 
 
 def _ensure_path(path: str | Path) -> Path:
@@ -24,6 +27,7 @@ def export_reaction_records_to_json(
     """Write the provided reactions to ``path`` as a JSON list."""
     out_path = _ensure_path(path)
     payload = [record.to_dict() for record in records]
+    logger.info("Exporting %d reactions to JSON at %s", len(records), out_path)
     with out_path.open("w", encoding="utf-8") as fh:
         json.dump(payload, fh, indent=indent)
 
@@ -60,3 +64,4 @@ def export_reaction_records_to_csv(
                     "extra_metadata": dumps(record.extra_metadata),
                 }
             )
+    logger.info("Exported %d reactions to CSV at %s", len(records), out_path)

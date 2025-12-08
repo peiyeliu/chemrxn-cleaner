@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+import logging
 from typing import Iterable, List
 
 from rdkit import Chem
 
 from .types import ReactionRecord
+
+logger = logging.getLogger(__name__)
 
 # ---------------------- basic SMILES tool functions ---------------------- #
 
@@ -34,10 +37,12 @@ def canonicalize_smiles(smiles: str, isomeric: bool = True) -> str:
         ValueError if SMILES cannot be parsed.
     """
     if not smiles:
+        logger.error("Empty SMILES string cannot be canonicalized.")
         raise ValueError("Empty SMILES string cannot be canonicalized.")
 
     mol = Chem.MolFromSmiles(smiles)
     if mol is None:
+        logger.error("Invalid SMILES (cannot parse): %r", smiles)
         raise ValueError(f"Invalid SMILES (cannot parse): {smiles!r}")
 
     return Chem.MolToSmiles(mol, isomericSmiles=isomeric)
@@ -86,11 +91,13 @@ def parse_reaction_smiles(
         ValueError on invalid format when strict=True.
     """
     if rxn_smiles is None:
+        logger.error("rxn_smiles cannot be None.")
         raise ValueError("rxn_smiles cannot be None.")
 
     parts = rxn_smiles.strip().split(">")
     if len(parts) != 3:
         if strict:
+            logger.error("Invalid reaction SMILES format: %r", rxn_smiles)
             raise ValueError(f"Invalid reaction SMILES format: {rxn_smiles!r}")
         else:
             # Pad or truncate to length 3
