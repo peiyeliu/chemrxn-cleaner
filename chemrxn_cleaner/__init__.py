@@ -11,6 +11,7 @@ from .cleaner import (
     clean_reactions_with_report,
 )
 from .filters import (
+    ElementFilterRule,
     ReactionFilter,
     all_molecules_valid,
     default_filters,
@@ -46,6 +47,7 @@ __all__ = [
     "FilterStats",
     # filters
     "ReactionFilter",
+    "ElementFilterRule",
     "has_product",
     "all_molecules_valid",
     "max_smiles_length",
