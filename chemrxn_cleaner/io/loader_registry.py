@@ -12,8 +12,6 @@ from typing import (
     Optional,
     Protocol,
     Sequence,
-    Tuple,
-    Union,
     overload,
     runtime_checkable,
 )
@@ -25,10 +23,8 @@ logger = logging.getLogger(__name__)
 
 @runtime_checkable
 class InputLoader(Protocol):
-    def __call__(
-        self, source: Any, /, **kwargs: Any
-    ) -> Iterable[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]:
-        """Load reactions from a source into an iterable of records or tuples.
+    def __call__(self, source: Any, /, **kwargs: Any) -> Iterable[ReactionRecord]:
+        """Load reactions from a source into an iterable of ReactionRecords.
 
         Args:
             source: Data source such as a path string, file object, DataFrame,
@@ -37,8 +33,7 @@ class InputLoader(Protocol):
                 column mapping).
 
         Returns:
-            Iterable of ``ReactionRecord`` instances or ``(smiles, metadata)``
-            tuples.
+            Iterable of ``ReactionRecord`` instances.
         """
         ...
 
@@ -64,8 +59,7 @@ def register_input_format(
         name: Input format name (e.g., ``"uspto"``, ``"ord"``, ``"csv"``).
             Prefer lowercase with underscores.
         loader: Callable with signature ``loader(source, **kwargs)`` returning
-            an iterable of ``ReactionRecord`` instances or ``(smiles, metadata)``
-            tuples.
+            an iterable of ``ReactionRecord`` instances.
         overwrite: When True, replace any existing loader registered under the
             same name.
 
@@ -86,8 +80,7 @@ def register_input_format(
         # Type check is intentionally loose but can help catch issues early
         raise InputFormatError(
             f"Loader for format '{key}' does not match InputLoader protocol. "
-            f"Expected callable(source, **kwargs) -> "
-            f"Iterable[ReactionRecord | Tuple[str, Dict[str, Any]]]."
+            f"Expected callable(source, **kwargs) -> Iterable[ReactionRecord]."
         )
 
     _INPUT_FORMAT_REGISTRY[key] = loader
@@ -166,7 +159,7 @@ def load_reactions(
     *,
     fmt: str,
     **kwargs: Any,
-) -> List[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]: ...
+) -> List[ReactionRecord]: ...
 
 
 def load_reactions(
@@ -174,7 +167,7 @@ def load_reactions(
     *,
     fmt: str,
     **kwargs: Any,
-) -> List[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]:
+) -> List[ReactionRecord]:
     """Parse an external data source using a registered format loader.
 
     Args:
@@ -183,8 +176,7 @@ def load_reactions(
         **kwargs: Extra arguments forwarded to the selected loader.
 
     Returns:
-        List of ``ReactionRecord`` instances or ``(reaction_smiles, metadata)``
-        tuples produced by the loader.
+        List of ``ReactionRecord`` instances produced by the loader.
     """
     logger.info("Loading reactions using format '%s'", fmt)
     loader = get_input_format(fmt)
