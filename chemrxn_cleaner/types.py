@@ -226,8 +226,6 @@ class ReactionRecord:
             show_atom_map_numbers: When True, keep atom-map numbers in the
                 depiction; when False, they are stripped before drawing.
 
-        Returns:
-            The rendered image object from RDKit.
         """
         from rdkit.Chem import Draw, rdChemReactions
 
