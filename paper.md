@@ -8,19 +8,32 @@ tags:
   - machine learning
   - Python
 authors:
-  - name: Your Name
-    orcid: 0000-0000-0000-0000
+  - name: Peiye Liu
+    orcid: 0009-0009-2350-0036
     affiliation: 1
 affiliations:
   - name: Independent Researcher, California, USA
     index: 1
 date: 2025-12-08
 bibliography: paper.bib
+nocite: |
+  @Kearnes2021
+  @schwaller2021prediction
+  @liu2024selffeedback
+  @Open_Reaction_Database_Project_The_Open_Reaction
+  @Thakkar2020
+  @Kannas2022
+  @Schleinitz2022
+  @Genheden2023
+  @Wigh2024
+  @https://doi.org/10.6084/m9.figshare.5104873.v1
+  @Weininger1988
+  @https://doi.org/10.5281/zenodo.17746401
 ---
 
 # Summary
 
-Machine learning models for reaction prediction, yield estimation, and synthetic planning typically require large, diverse, and standardized reaction datasets. However, widely used data sources such as the USPTO reaction corpus, the Open Reaction Database (ORD), and custom laboratory exports vary significantly in structure, metadata availability, and quality. Before these datasets can be used for modeling or analytics, practitioners must address challenges such as inconsistent SMILES representations, missing role assignments, noisy or malformed entries, non-standard metadata formats, and heterogeneous file structures.
+Machine learning models for reaction prediction, yield estimation, and synthetic planning typically require large, diverse, and standardized reaction datasets. However, widely used data sources such as the USPTO reaction corpus [@https://doi.org/10.6084/m9.figshare.5104873.v1], the Open Reaction Database (ORD) [@schwaller2021prediction], and custom laboratory exports [@Schleinitz2022; @liu2024selffeedback] vary significantly in structure, metadata availability, and quality. Before these datasets can be used for modeling or analytics, practitioners must address challenges such as inconsistent SMILES representations[@Weininger1988], missing role assignments, noisy or malformed entries, non-standard metadata formats, and heterogeneous file structures.
 
 **chemrxn-cleaner** is a lightweight, extensible Python package that provides uniform tools for loading, parsing, cleaning, filtering, reporting, and exporting reaction data. It enables researchers to rapidly transform raw reaction datasets into standardized ML-ready representations with minimal boilerplate, while also supporting custom formats and user-defined domain rules. The package aims to bridge a critical but often under-documented part of the reaction-ML workflow: *data preparation*.
 
@@ -40,9 +53,9 @@ These capabilities allow researchers to focus on modeling and analysis rather th
 
 # State of the Field
 
-Reaction-ML workflows in academia and industry rely heavily on data sources such as the USPTO patents dataset([@schwaller2021prediction]), curated proprietary corpora ([@Open_Reaction_Database_Project_The_Open_Reaction]), or structured records from the Open Reaction Database (see [@Kearnes2021]). While several libraries provide downstream modeling components (e.g., reaction prediction architectures, graph neural networks, see [@Thakkar2020; @Kannas2022; @Genheden2023; @Wigh2024]), few open-source tools directly address the *data preparation* stage. Most publications either write custom scripts or use ad hoc pipelines that are rarely reusable across datasets.
+Reaction-ML workflows in academia and industry rely heavily on data sources such as the USPTO patents dataset[@schwaller2021prediction], curated proprietary corpora [@Open_Reaction_Database_Project_The_Open_Reaction], or structured records from the Open Reaction Database [@Kearnes2021]. While several libraries provide downstream modeling components (e.g., reaction prediction architectures, graph neural networks, see [@Thakkar2020; @Kannas2022; @Genheden2023; @Wigh2024]), few open-source tools directly address the *data preparation* stage. Most publications either write custom scripts or use ad hoc pipelines that are rarely reusable across datasets.
 
-chemrxn-cleaner complements existing chemistry toolkits (e.g., RDKit, ord-schema) by focusing explicitly on dataset ingestion, cleaning, and transformation. Its registry-based loader system enables flexible support for new formats, and its filter stack design allows users to encode domain-specific rules—for example, excluding reactions with forbidden elements, filtering by SMILES length, or applying similarity-based criteria. The package therefore helps standardize workflows that are currently duplicated across many research groups.
+**chemrxn-cleaner** complements existing chemistry toolkits (e.g., RDKit, ord-schema) by targeting the often ad-hoc “last mile” of dataset ingestion, cleaning, and transformation. It provides a registry-based loader system and a unified ReactionRecord abstraction that together support heterogeneous sources such as USPTO .rsmi, ORD .pb, CSV/JSON tables, and user-defined formats. Cleaning is expressed as a composable stack of Python callables, making it straightforward to encode domain-specific rules—for example, excluding reactions with forbidden elements, enforcing SMILES length limits, or applying similarity-based criteria. A lightweight reporting layer quantifies how each pipeline affects dataset size and composition, and minimal ML utilities (pandas conversion, deterministic splits, PyTorch datasets) make the cleaned records easy to integrate with downstream modelling libraries without prescribing any particular architecture. In this way, chemrxn-cleaner standardizes workflows that are currently re-implemented in many research codebases while remaining deliberately lightweight and library-oriented rather than a monolithic pipeline.
 
 # Software Description
 
@@ -111,7 +124,7 @@ export_reaction_records(cleaned, "cleaned.json", fmt="json")
 export_reaction_records(cleaned, "cleaned.csv", fmt="csv")
 ```
 # Acknowledgements
-The package builds upon RDKit for cheminformatics operations and ord-schema for parsing ORD records. We thank contributors from the open-source chemistry community whose tools made this project possible.
+The package builds upon RDKit[@https://doi.org/10.5281/zenodo.17746401] for cheminformatics operations and ord-schema [@Kearnes2021] for parsing ORD records. We thank contributors from the open-source chemistry community whose tools made this project possible.
 
 
 # References
