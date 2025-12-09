@@ -118,16 +118,18 @@
 </code></pre></div>
 <h2 id="quick-start">Quick start<a class="headerlink" href="#quick-start" title="Permanent link">&para;</a></h2>
 <div class="highlight"><pre><span></span><code><span class="kn">from</span><span class="w"> </span><span class="nn">chemrxn_cleaner</span><span class="w"> </span><span class="kn">import</span> <span class="p">(</span>
-    <span class="n">basic_cleaning_pipeline</span><span class="p">,</span>
+    <span class="n">clean_and_canonicalize</span><span class="p">,</span>
     <span class="n">clean_reactions_with_report</span><span class="p">,</span>
+    <span class="n">default_filters</span><span class="p">,</span>
     <span class="n">export_reaction_records</span><span class="p">,</span>
     <span class="n">load_reactions</span><span class="p">,</span>
 <span class="p">)</span>
 
 <span class="n">raw</span> <span class="o">=</span> <span class="n">load_reactions</span><span class="p">(</span><span class="s2">&quot;data/sample.rsmi&quot;</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">&quot;uspto&quot;</span><span class="p">,</span> <span class="n">keep_meta</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">filters</span> <span class="o">=</span> <span class="n">default_filters</span><span class="p">()</span>
 
-<span class="n">cleaned</span> <span class="o">=</span> <span class="n">basic_cleaning_pipeline</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
-<span class="n">cleaned_with_report</span><span class="p">,</span> <span class="n">stats</span> <span class="o">=</span> <span class="n">clean_reactions_with_report</span><span class="p">(</span><span class="n">raw</span><span class="p">)</span>
+<span class="n">cleaned</span> <span class="o">=</span> <span class="n">clean_and_canonicalize</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">)</span>
+<span class="n">cleaned_with_report</span><span class="p">,</span> <span class="n">stats</span> <span class="o">=</span> <span class="n">clean_reactions_with_report</span><span class="p">(</span><span class="n">raw</span><span class="p">,</span> <span class="n">filters</span><span class="o">=</span><span class="n">filters</span><span class="p">)</span>
 <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Input: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">n_input</span><span class="si">}</span><span class="s2">, output: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">n_output</span><span class="si">}</span><span class="s2">, failed: </span><span class="si">{</span><span class="n">stats</span><span class="o">.</span><span class="n">n_failed_parse</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
 <span class="n">export_reaction_records</span><span class="p">(</span><span class="n">cleaned</span><span class="p">,</span> <span class="s2">&quot;cleaned.json&quot;</span><span class="p">,</span> <span class="n">fmt</span><span class="o">=</span><span class="s2">&quot;json&quot;</span><span class="p">)</span>
@@ -267,5 +269,5 @@
 
 <!--
 MkDocs version : 1.6.1
-Build Date UTC : 2025-12-09 05:58:08.150525+00:00
+Build Date UTC : 2025-12-09 06:01:52.721603+00:00
 -->
