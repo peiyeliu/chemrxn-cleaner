@@ -9,8 +9,7 @@ from .loader_registry import (
     register_input_format,
 )
 from .writer import (
-    export_reaction_records_to_csv,
-    export_reaction_records_to_json,
+    export_reaction_records,
 )
 
 __all__ = [
@@ -19,7 +18,6 @@ __all__ = [
     "register_input_format",
     "get_input_format",
     "load_reactions",
-    "export_reaction_records_to_json",
-    "export_reaction_records_to_csv",
+    "export_reaction_records",
     "loader_registry",
 ]

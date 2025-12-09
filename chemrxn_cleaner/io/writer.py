@@ -26,37 +26,16 @@ def _ensure_path(path: str | Path) -> Path:
     return path if isinstance(path, Path) else Path(path)
 
 
-def export_reaction_records_to_json(
-    records: Sequence[ReactionRecord],
-    path: str | Path,
-    *,
-    indent: int = 2,
+def _write_json(
+    records: Sequence[ReactionRecord], out_path: Path, *, indent: int
 ) -> None:
-    """Write the provided reactions to ``path`` as a JSON list.
-
-    Args:
-        records: Reaction records to serialize.
-        path: Destination path for the JSON file.
-        indent: Indentation level for ``json.dump``.
-    """
-    out_path = _ensure_path(path)
     payload = [record.to_dict() for record in records]
     logger.info("Exporting %d reactions to JSON at %s", len(records), out_path)
     with out_path.open("w", encoding="utf-8") as fh:
         json.dump(payload, fh, indent=indent)
 
 
-def export_reaction_records_to_csv(
-    records: Sequence[ReactionRecord],
-    path: str | Path,
-) -> None:
-    """Write reactions to ``path`` in CSV format.
-
-    Args:
-        records: Reaction records to export.
-        path: Destination path for the CSV file.
-    """
-    out_path = _ensure_path(path)
+def _write_csv(records: Sequence[ReactionRecord], out_path: Path) -> None:
     fieldnames = [
         "reaction_smiles",
         "reactants",
@@ -84,3 +63,34 @@ def export_reaction_records_to_csv(
                 }
             )
     logger.info("Exported %d reactions to CSV at %s", len(records), out_path)
+
+
+def export_reaction_records(
+    records: Sequence[ReactionRecord],
+    path: str | Path,
+    *,
+    fmt: str | None = None,
+    indent: int = 2,
+) -> None:
+    """Serialize reactions to the provided path as JSON or CSV.
+
+    Args:
+        records: Reaction records to serialize.
+        path: Destination path for the file.
+        fmt: Output format; ``"json"`` or ``"csv"``. When omitted, the format is
+            inferred from the file extension.
+        indent: Indentation level for JSON output (ignored for CSV).
+    """
+    out_path = _ensure_path(path)
+    resolved_fmt = (fmt or out_path.suffix.lstrip(".")).lower()
+    if not resolved_fmt:
+        raise ValueError("File format not provided; supply fmt or a .json/.csv path.")
+
+    if resolved_fmt == "json":
+        _write_json(records, out_path, indent=indent)
+    elif resolved_fmt == "csv":
+        _write_csv(records, out_path)
+    else:
+        raise ValueError(
+            f"Unsupported export format '{resolved_fmt}'. Use 'json' or 'csv'."
+        )

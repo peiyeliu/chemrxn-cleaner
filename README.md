@@ -23,8 +23,7 @@ pip install -e .
 from chemrxn_cleaner import (
     basic_cleaning_pipeline,
     clean_reactions_with_report,
-    export_reaction_records_to_json,
-    export_reaction_records_to_csv,
+    export_reaction_records,
     load_reactions,
 )
 
@@ -37,8 +36,8 @@ print(f"Kept {len(cleaned)}/{len(raw)} reactions after cleaning")
 cleaned_with_report, stats = clean_reactions_with_report(raw)
 print(f"Failed parses: {stats.n_failed_parse}, dropped: {stats.n_input - stats.n_output}")
 
-export_reaction_records_to_json(cleaned, "cleaned.json")
-export_reaction_records_to_csv(cleaned, "cleaned.csv")
+export_reaction_records(cleaned, "cleaned.json", fmt="json")
+export_reaction_records(cleaned, "cleaned.csv", fmt="csv")
 ```
 
 ## Loading reaction data
@@ -158,16 +157,15 @@ Filters are simple callables returning `True`/`False`. Compose `meta_filter`, `e
 Use `clean_reactions_with_report` to capture filter-level counters, failed parse counts, and the final number of reactions kept.
 
 ```python
-from chemrxn_cleaner import clean_reactions_with_report
-from chemrxn_cleaner import export_reaction_records_to_json, export_reaction_records_to_csv
+from chemrxn_cleaner import clean_reactions_with_report, export_reaction_records
 
 cleaned, stats = clean_reactions_with_report(raw, filters=filters)
 print(f"Input: {stats.n_input}, output: {stats.n_output}, failed_parse: {stats.n_failed_parse}")
 for name, fstats in stats.per_filter.items():
     print(f"{name}: applied={fstats.applied}, passed={fstats.passed}, failed={fstats.failed}")
 
-export_reaction_records_to_json(cleaned, "cleaned.json")
-export_reaction_records_to_csv(cleaned, "cleaned.csv")
+export_reaction_records(cleaned, "cleaned.json", fmt="json")
+export_reaction_records(cleaned, "cleaned.csv", fmt="csv")
 
 # Combine stats from parallel cleaning runs
 from chemrxn_cleaner.reporter import CleaningStats

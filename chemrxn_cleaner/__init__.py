@@ -21,8 +21,7 @@ from .filters import (
     meta_filter,
 )
 from .io import (
-    export_reaction_records_to_csv,
-    export_reaction_records_to_json,
+    export_reaction_records,
     get_input_format,
     load_reactions,
     register_input_format,
@@ -64,8 +63,7 @@ __all__ = [
     "register_input_format",
     "get_input_format",
     "load_reactions",
-    "export_reaction_records_to_json",
-    "export_reaction_records_to_csv",
+    "export_reaction_records",
     # ml
     "ForwardReactionDataset",
     "records_to_dataframe",

@@ -16,7 +16,7 @@ pip install chemrxn-cleaner
 from chemrxn_cleaner import (
     basic_cleaning_pipeline,
     clean_reactions_with_report,
-    export_reaction_records_to_json,
+    export_reaction_records,
     load_reactions,
 )
 
@@ -26,7 +26,7 @@ cleaned = basic_cleaning_pipeline(raw)
 cleaned_with_report, stats = clean_reactions_with_report(raw)
 print(f"Input: {stats.n_input}, output: {stats.n_output}, failed: {stats.n_failed_parse}")
 
-export_reaction_records_to_json(cleaned, "cleaned.json")
+export_reaction_records(cleaned, "cleaned.json", fmt="json")
 ```
 
 ## Loading reaction data
@@ -84,13 +84,13 @@ print(stats.per_filter["max_smiles_length"].failed)
 ```python
 from chemrxn_cleaner import (
     ForwardReactionDataset,
-    export_reaction_records_to_csv,
+    export_reaction_records,
     records_to_dataframe,
     train_valid_test_split,
 )
 
 df = records_to_dataframe(cleaned)
-export_reaction_records_to_csv(cleaned, "cleaned.csv")
+export_reaction_records(cleaned, "cleaned.csv", fmt="csv")
 
 train, valid, test = train_valid_test_split(cleaned, seed=123)
 dataset = ForwardReactionDataset(train, use_agents=True)

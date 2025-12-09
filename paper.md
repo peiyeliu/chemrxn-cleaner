@@ -85,7 +85,7 @@ The package includes:
 Filters are simple callables returning booleans and may be freely composed.
 
 ### 4. Reporting and exporting
-The `reporter` module exposes the `CleaningStats`/`FilterStats` structures used by the cleaning pipeline to track how many reactions were kept, dropped, or failed to parse. Cleaned reactions can be exported to JSON or CSV.
+The `reporter` module exposes the `CleaningStats`/`FilterStats` structures used by the cleaning pipeline to track how many reactions were kept, dropped, or failed to parse. Cleaned reactions can be exported to JSON or CSV via `export_reaction_records`.
 
 ### 5. ML utilities
 For rapid experimentation, the package includes:
@@ -100,8 +100,7 @@ For rapid experimentation, the package includes:
 from chemrxn_cleaner import (
     load_reactions,
     clean_reactions_with_report,
-    export_reaction_records_to_json,
-    export_reaction_records_to_csv,
+    export_reaction_records,
 )
 
 raw = load_reactions("data/sample.rsmi", fmt="uspto", keep_meta=True)
@@ -109,8 +108,8 @@ raw = load_reactions("data/sample.rsmi", fmt="uspto", keep_meta=True)
 cleaned, stats = clean_reactions_with_report(raw)
 print(f"Kept {stats.n_output}/{stats.n_input} reactions after cleaning")
 
-export_reaction_records_to_json(cleaned, "cleaned.json")
-export_reaction_records_to_csv(cleaned, "cleaned.csv")
+export_reaction_records(cleaned, "cleaned.json", fmt="json")
+export_reaction_records(cleaned, "cleaned.csv", fmt="csv")
 ```
 # Acknowledgements
 The package builds upon RDKit for cheminformatics operations and ord-schema for parsing ORD records. We thank contributors from the open-source chemistry community whose tools made this project possible.
