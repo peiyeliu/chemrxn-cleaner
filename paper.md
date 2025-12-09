@@ -14,7 +14,7 @@ authors:
 affiliations:
   - name: Independent Researcher, California, USA
     index: 1
-date: 2025-XX-XX
+date: 2025-12-08
 bibliography: paper.bib
 ---
 
@@ -40,7 +40,7 @@ These capabilities allow researchers to focus on modeling and analysis rather th
 
 # State of the Field
 
-Reaction-ML workflows in academia and industry rely heavily on data sources such as the USPTO patents dataset, curated proprietary corpora, or structured records from the Open Reaction Database. While several libraries provide downstream modeling components (e.g., reaction prediction architectures, graph neural networks), few open-source tools directly address the *data preparation* stage. Most publications either write custom scripts or use ad hoc pipelines that are rarely reusable across datasets.
+Reaction-ML workflows in academia and industry rely heavily on data sources such as the USPTO patents dataset([@schwaller2021prediction]), curated proprietary corpora ([@Open_Reaction_Database_Project_The_Open_Reaction]), or structured records from the Open Reaction Database (see [@Kearnes2021]). While several libraries provide downstream modeling components (e.g., reaction prediction architectures, graph neural networks, see [@Thakkar2020; @Kannas2022; @Genheden2023; @Wigh2024]), few open-source tools directly address the *data preparation* stage. Most publications either write custom scripts or use ad hoc pipelines that are rarely reusable across datasets.
 
 chemrxn-cleaner complements existing chemistry toolkits (e.g., RDKit, ord-schema) by focusing explicitly on dataset ingestion, cleaning, and transformation. Its registry-based loader system enables flexible support for new formats, and its filter stack design allows users to encode domain-specific rules—for example, excluding reactions with forbidden elements, filtering by SMILES length, or applying similarity-based criteria. The package therefore helps standardize workflows that are currently duplicated across many research groups.
 
