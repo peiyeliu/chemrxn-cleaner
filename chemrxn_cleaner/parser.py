@@ -15,12 +15,13 @@ logger = logging.getLogger(__name__)
 
 
 def parse_smiles_list(smiles_block: str) -> List[str]:
-    """
-    Split a SMILES block like 'CCO.CCBr' into ['CCO', 'CCBr'].
+    """Split a dot-delimited SMILES block into individual tokens.
 
-    - Empty string -> []
-    - Strips whitespace around each token
-    - Skips empty tokens
+    Args:
+        smiles_block: String such as ``'CCO.CCBr'``.
+
+    Returns:
+        List of trimmed SMILES strings; empty input yields an empty list.
     """
     if not smiles_block:
         return []
@@ -30,11 +31,17 @@ def parse_smiles_list(smiles_block: str) -> List[str]:
 
 
 def canonicalize_smiles(smiles: str, isomeric: bool = True) -> str:
-    """
-    Convert a SMILES string to its canonical form using RDKit.
+    """Convert a SMILES string to its canonical form using RDKit.
+
+    Args:
+        smiles: Input SMILES string.
+        isomeric: Preserve stereochemistry in the canonical output.
+
+    Returns:
+        Canonical SMILES string.
 
     Raises:
-        ValueError if SMILES cannot be parsed.
+        ValueError: If the SMILES string is empty or cannot be parsed.
     """
     if not smiles:
         logger.error("Empty SMILES string cannot be canonicalized.")
@@ -52,10 +59,17 @@ def canonicalize_smiles_list(
     smiles_list: Iterable[str],
     isomeric: bool = True,
 ) -> List[str]:
-    """
-    Canonicalize a list of SMILES strings.
+    """Canonicalize each SMILES string in a list.
 
-    Invalid SMILES will raise ValueError.
+    Args:
+        smiles_list: Iterable of SMILES strings to convert.
+        isomeric: Whether to preserve stereochemistry in each output SMILES.
+
+    Returns:
+        List of canonical SMILES strings.
+
+    Raises:
+        ValueError: If any SMILES cannot be parsed.
     """
     return [canonicalize_smiles(s, isomeric=isomeric) for s in smiles_list]
 
@@ -67,28 +81,22 @@ def parse_reaction_smiles(
     rxn_smiles: str,
     strict: bool = True,
 ) -> ReactionRecord:
-    """
-    Parse a reaction SMILES of the form:
+    """Parse a reaction SMILES string into a ``ReactionRecord``.
 
-        reactants>reagents>products
-
-    Examples:
-        "C=CCBr>>C=CCI"
-        ""CC(=O)O.OCC>[H+].[Cl-].OCC>CC(=O)OCC"
-        "CC(=O)Cl.NH3>>CC(=O)NH2"
+    Reaction SMILES must follow ``reactants>reagents>products``. When
+    ``strict`` is False, missing fields are padded with empty strings instead
+    of raising.
 
     Args:
-        rxn_smiles: Raw reaction SMILES string.
-        strict:
-            - If True  (default): require exactly three '>'-separated parts,
-              otherwise raise ValueError.
-            - If False: if parts are fewer than 3, pad missing fields with ''.
+        rxn_smiles: Raw reaction SMILES string to parse.
+        strict: Enforce exactly three ``>``-separated parts when True.
 
     Returns:
-        ReactionRecord with reactants/reagents/products as lists of SMILES.
+        ReactionRecord with parsed reactants, reagents, and products lists.
 
     Raises:
-        ValueError on invalid format when strict=True.
+        ValueError: If ``rxn_smiles`` is None or incorrectly formatted when
+            ``strict`` is True.
     """
     if rxn_smiles is None:
         logger.error("rxn_smiles cannot be None.")
@@ -121,10 +129,14 @@ def canonicalize_reaction(
     record: ReactionRecord,
     isomeric: bool = True,
 ) -> ReactionRecord:
-    """
-    Return a new ReactionRecord with all SMILES canonicalized.
+    """Return a new ReactionRecord with all SMILES canonicalized.
 
-    This does NOT modify the input record in-place.
+    Args:
+        record: Reaction record to convert.
+        isomeric: Preserve stereochemistry in canonical SMILES when True.
+
+    Returns:
+        A new ReactionRecord containing canonicalized SMILES and copied metadata.
     """
     canon_reactants = canonicalize_smiles_list(record.reactants, isomeric=isomeric)
     canon_reagents = canonicalize_smiles_list(record.reagents, isomeric=isomeric)

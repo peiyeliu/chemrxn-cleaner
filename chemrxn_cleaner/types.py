@@ -5,6 +5,8 @@ from typing import Any, Dict, List, Optional
 
 
 class YieldType(str, Enum):
+    """Yield measurement types supported by the dataset."""
+
     NONE = "none"  # Not a real yield
     ISOLATED = "isolated"  # isolated yield after workup and purification.
     ASSAY = "assay"  # Assay / crude yield (e.g., NMR, UPLC)
@@ -15,7 +17,43 @@ class YieldType(str, Enum):
 
 @dataclass
 class ReactionRecord:
-    """Container for a single reaction instance."""
+    """Container for a single reaction instance.
+
+    Attributes:
+        reaction_id: Unique identifier for the reaction within a dataset.
+        source: Origin of the reaction data (e.g., ``"uspto"``, ``"ord"``).
+        source_ref: Reference such as DOI or patent number.
+        source_file_path: File path from which the record was loaded.
+        reaction_smiles: Raw reaction SMILES string.
+        reactants: Reactant SMILES strings.
+        reagents: Reagent/agent SMILES strings.
+        products: Product SMILES strings.
+        atom_mapping: Optional atom-mapped reaction SMILES.
+        reaction_class: Optional reaction class label.
+        procedure: Experimental procedure or flattened metadata.
+        temperature_c: Reaction temperature in Celsius.
+        time_hours: Reaction time in hours.
+        pressure_bar: Reaction pressure in bar.
+        ph: Observed or targeted pH.
+        solvents: List of solvent identifiers.
+        catalysts: List of catalysts.
+        bases: List of bases.
+        additives: List of other additives.
+        atmosphere: Reaction atmosphere description.
+        scale_mmol: Reaction scale in millimoles.
+        yield_value: Reported yield numeric value.
+        yield_type: Category describing how ``yield_value`` was measured.
+        success: Optional boolean flag for reaction success.
+        selectivity: Selectivity metric value, if provided.
+        selectivity_type: Descriptor for the selectivity metric.
+        is_balanced: Whether the reaction is atom-balanced.
+        sanity_check_passed: Indicates whether sanity checks passed.
+        warnings: Free-form warnings accumulated during processing.
+        split: Dataset split label (e.g., train/valid/test).
+        extra_numeric: Additional numeric metadata keyed by name.
+        extra_categorical: Additional categorical metadata keyed by name.
+        extra_metadata: Unstructured metadata not captured elsewhere.
+    """
 
     # ---- Required identifiers / core representation ----
     reaction_id: str = ""
@@ -67,8 +105,11 @@ class ReactionRecord:
     extra_metadata: Dict[str, Any] = field(default_factory=dict)
 
     def to_dict(self) -> Dict[str, Any]:
-        """
-        Return a plain-Python representation that is JSON serializable.
+        """Return a plain-Python representation that is JSON serializable.
+
+        Returns:
+            Dictionary containing shallow copies of all fields suitable for JSON
+            serialization.
         """
         return {
             "reaction_id": self.reaction_id,
@@ -108,8 +149,14 @@ class ReactionRecord:
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "ReactionRecord":
-        """
-        Construct a ReactionRecord from a dictionary structure (inverse of to_dict()).
+        """Construct a ``ReactionRecord`` from a dictionary payload.
+
+        Args:
+            data: Mapping produced by ``to_dict`` or a similarly structured
+                dictionary.
+
+        Returns:
+            A populated ``ReactionRecord`` instance.
         """
         yield_type_value = data.get("yield_type") or YieldType.NONE
         if isinstance(yield_type_value, str):
@@ -157,6 +204,7 @@ class ReactionRecord:
         )
 
     def __post_init__(self) -> None:
+        """Ensure optional mapping fields default to empty dictionaries."""
         if self.extra_metadata is None:
             self.extra_metadata = {}
         if self.procedure is None:
@@ -169,6 +217,18 @@ class ReactionRecord:
         with_meta: bool = True,
         show_atom_map_numbers: bool = False,
     ):
+        """Visualize the reaction using RDKit.
+
+        Args:
+            size: Tuple of pixel dimensions for the rendered image.
+            jupyter: When True, display inline using IPython display hooks.
+            with_meta: When True, show ``extra_metadata`` alongside the image.
+            show_atom_map_numbers: When True, keep atom-map numbers in the
+                depiction; when False, they are stripped before drawing.
+
+        Returns:
+            The rendered image object from RDKit.
+        """
         from rdkit.Chem import Draw, rdChemReactions
 
         rxn_smiles = self.reaction_smiles

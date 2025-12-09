@@ -28,19 +28,17 @@ class InputLoader(Protocol):
     def __call__(
         self, source: Any, /, **kwargs: Any
     ) -> Iterable[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]:
-        """
-        Parameters
-        ----------
-        source:
-            Any agreed-upon data source. Can be a path string, file object, DataFrame,
-            list, etc.
-            Recommendation: most loaders should use a str path for easy CLI use.
-        **kwargs:
-            Extra configuration options (e.g., delimiter, column mapping).
+        """Load reactions from a source into an iterable of records or tuples.
 
-        Returns
-        -------
-        Iterable[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]
+        Args:
+            source: Data source such as a path string, file object, DataFrame,
+                or list. Paths are preferred for CLI usability.
+            **kwargs: Additional loader-specific options (e.g., delimiter,
+                column mapping).
+
+        Returns:
+            Iterable of ``ReactionRecord`` instances or ``(smiles, metadata)``
+            tuples.
         """
         ...
 
@@ -60,26 +58,20 @@ def register_input_format(
     *,
     overwrite: bool = False,
 ) -> None:
-    """
-    Register a new input format.
+    """Register a new input format.
 
-    Parameters
-    ----------
-    name:
-        Input format name, e.g., "uspto", "ord", "csv", "my_lab_format".
-        Suggested style: lowercase letters and underscores.
-    loader:
-        A callable with signature similar to:
-            loader(source, **kwargs) -> Iterable[Tuple[str, Dict[str, Any]]]
-    overwrite:
-        If False (default), raise when name already exists.
-        If True, overwrite an existing loader with the same name.
+    Args:
+        name: Input format name (e.g., ``"uspto"``, ``"ord"``, ``"csv"``).
+            Prefer lowercase with underscores.
+        loader: Callable with signature ``loader(source, **kwargs)`` returning
+            an iterable of ``ReactionRecord`` instances or ``(smiles, metadata)``
+            tuples.
+        overwrite: When True, replace any existing loader registered under the
+            same name.
 
-    Raises
-    ------
-    InputFormatError
-        When name already exists and overwrite=False
-        or loader does not match the protocol.
+    Raises:
+        InputFormatError: If the name already exists and ``overwrite`` is False
+            or the loader does not satisfy the protocol.
     """
     key = name.strip().lower()
     if not key:
@@ -103,22 +95,16 @@ def register_input_format(
 
 
 def get_input_format(name: str) -> InputLoader:
-    """
-    Retrieve the loader registered for the given name.
+    """Retrieve the loader registered for the given name.
 
-    Parameters
-    ----------
-    name:
-        The format name used during registration, e.g., "uspto".
+    Args:
+        name: Format name used during registration (e.g., ``"uspto"``).
 
-    Returns
-    -------
-    InputLoader
+    Returns:
+        The loader callable for the specified format.
 
-    Raises
-    ------
-    InputFormatError
-        When the format is not registered.
+    Raises:
+        InputFormatError: If the format is not registered.
     """
     key = name.strip().lower()
     try:
@@ -189,26 +175,16 @@ def load_reactions(
     fmt: str,
     **kwargs: Any,
 ) -> List[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]:
-    """
-    Parse an external data source into ReactionRecord objects
-    or (reaction_smiles, metadata) tuples using the given format.
+    """Parse an external data source using a registered format loader.
 
-    Parameters
-    ----------
-    source:
-        External data source, e.g.:
-        - Path to a text file of USPTO reaction SMILES
-        - Path to an ORD JSON file
-        - Path to a CSV file
-        - An in-memory DataFrame, list, etc.
-    fmt:
-        Input format name, e.g., "uspto", "ord", "csv".
-    **kwargs:
-        Extra arguments forwarded to the loader.
+    Args:
+        source: External data source such as a file path, DataFrame, or list.
+        fmt: Registered input format name (e.g., ``"uspto"``, ``"ord"``, ``"csv"``).
+        **kwargs: Extra arguments forwarded to the selected loader.
 
-    Returns
-    -------
-    List[Union[ReactionRecord, Tuple[str, Dict[str, Any]]]]
+    Returns:
+        List of ``ReactionRecord`` instances or ``(reaction_smiles, metadata)``
+        tuples produced by the loader.
     """
     logger.info("Loading reactions using format '%s'", fmt)
     loader = get_input_format(fmt)
@@ -216,10 +192,7 @@ def load_reactions(
 
 
 def _register_builtin_formats() -> None:
-    """
-    Register built-in input formats when the package is imported.
-    Can be called in __init__.py: loader_registry._register_builtin_formats()
-    """
+    """Register built-in input formats on import."""
     from .loader import (
         load_csv,
         load_json,

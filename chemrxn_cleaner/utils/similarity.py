@@ -15,6 +15,13 @@ from ..types import ReactionRecord
 
 @dataclass(frozen=True)
 class FingerprintConfig:
+    """Configuration for generating Morgan fingerprints.
+
+    Attributes:
+        radius: Fingerprint radius (e.g., 2 for ECFP4).
+        n_bits: Length of the fingerprint bit vector.
+    """
+
     radius: int = 2
     n_bits: int = 2048
 
@@ -24,7 +31,14 @@ class FingerprintConfig:
 
 @lru_cache(maxsize=50_000)
 def _mol_from_smiles(smiles: str) -> Chem.Mol | None:
-    """Cached molecule parsing to avoid rebuilding the same structure."""
+    """Parse SMILES into an RDKit molecule with caching.
+
+    Args:
+        smiles: Molecule SMILES string.
+
+    Returns:
+        RDKit molecule or ``None`` when parsing fails.
+    """
     if not smiles:
         return None
     mol = Chem.MolFromSmiles(smiles)
@@ -35,7 +49,15 @@ def _mol_from_smiles(smiles: str) -> Chem.Mol | None:
 def _fingerprint_from_smiles(
     smiles: str, cfg: FingerprintConfig
 ) -> DataStructs.ExplicitBitVect | None:
-    """Generate a Morgan fingerprint from SMILES and cache the result."""
+    """Generate a Morgan fingerprint from SMILES and cache the result.
+
+    Args:
+        smiles: Molecule SMILES string.
+        cfg: Fingerprint configuration.
+
+    Returns:
+        Morgan fingerprint bit vector or ``None`` if parsing fails.
+    """
     mol = _mol_from_smiles(smiles)
     if mol is None:
         return None
@@ -48,7 +70,18 @@ def _fingerprint_from_smiles(
 
 
 def _iter_molecule_smiles(rxn: ReactionRecord, role: str) -> Iterable[str]:
-    """Return the SMILES strings for molecules corresponding to the given role."""
+    """Yield molecule SMILES strings for the requested role.
+
+    Args:
+        rxn: Reaction record to inspect.
+        role: One of ``"reactant"``, ``"reagent"``, ``"product"``, or ``"any"``.
+
+    Returns:
+        Iterator over SMILES strings in the specified role(s).
+
+    Raises:
+        ValueError: If ``role`` is not recognized.
+    """
     if role == "reactant":
         yield from getattr(rxn, "reactants", [])
     elif role == "reagent":
@@ -73,15 +106,23 @@ def similarity_filter(
     radius: int = 2,
     n_bits: int = 2048,
 ) -> ReactionFilter:
-    """
-    Return a ReactionFilter for use in clean_reactions(..., filters=[...]).
+    """Return a similarity-based ``ReactionFilter``.
 
-    :param query_smiles: Target structure(s), one or more SMILES strings
-    :param role: Which molecular role(s) in the reaction to match;
-                "any" checks all three
-    :param threshold: Tanimoto similarity cutoff; >= threshold counts as a hit
-    :param radius: Morgan fingerprint radius (2 -> ECFP4, 3 -> ECFP6)
-    :param n_bits: Fingerprint bit vector length
+    Args:
+        query_smiles: Target structure(s) expressed as SMILES.
+        role: Molecular role(s) to check; ``"any"`` inspects reactants,
+            reagents, and products.
+        threshold: Tanimoto similarity cutoff; scores >= ``threshold`` count as
+            a hit.
+        radius: Morgan fingerprint radius (2 for ECFP4, 3 for ECFP6).
+        n_bits: Length of the fingerprint bit vector.
+
+    Returns:
+        ReactionFilter predicate that keeps reactions containing at least one
+        molecule similar to the query.
+
+    Raises:
+        ValueError: If any query SMILES cannot be parsed.
     """
 
     cfg = FingerprintConfig(radius=radius, n_bits=n_bits)
@@ -101,11 +142,13 @@ def similarity_filter(
         query_fps.append(fp)
 
     def _filter(rxn: ReactionRecord) -> bool:
-        """
-        For a single reaction:
-        - Collect all molecule SMILES for the configured role
-        - Compare Tanimoto similarity with each query
-        - Return True if any similarity >= threshold
+        """Return True when any molecule exceeds the similarity threshold.
+
+        Args:
+            rxn: Reaction to compare against the query fingerprints.
+
+        Returns:
+            True when at least one molecule meets or exceeds ``threshold``.
         """
         # Adjust here if you need every query matched instead of any
         for smi in _iter_molecule_smiles(rxn, role):

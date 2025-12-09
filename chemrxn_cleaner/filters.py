@@ -12,6 +12,14 @@ from .types import ReactionRecord
 
 @dataclass
 class ElementFilterRule:
+    """Allowed or forbidden element symbols by reaction role.
+
+    Attributes:
+        reactantElements: Allowed/forbidden element symbols for reactants.
+        reagentElements: Allowed/forbidden element symbols for reagents.
+        productElements: Allowed/forbidden element symbols for products.
+    """
+
     reactantElements: List[str]
     reagentElements: List[str]
     productElements: List[str]
@@ -26,14 +34,28 @@ _PERIODIC_TABLE = Chem.GetPeriodicTable()
 
 
 def _iter_all_smiles(record: ReactionRecord) -> Iterable[str]:
-    """Yield all SMILES strings from a ReactionRecord."""
+    """Yield all SMILES strings from a reaction record in canonical order.
+
+    Args:
+        record: Reaction to iterate through.
+
+    Returns:
+        Iterator over reactant, reagent, then product SMILES.
+    """
     yield from record.reactants
     yield from record.reagents
     yield from record.products
 
 
 def _is_valid_smiles(smiles: str) -> bool:
-    """Return True if SMILES can be parsed by RDKit."""
+    """Check whether RDKit can parse the provided SMILES.
+
+    Args:
+        smiles: Candidate SMILES string.
+
+    Returns:
+        True when a molecule can be built from ``smiles``; otherwise False.
+    """
     if not smiles:
         return False
     mol = Chem.MolFromSmiles(smiles)
@@ -41,7 +63,17 @@ def _is_valid_smiles(smiles: str) -> bool:
 
 
 def _normalize_element_list(elements: Iterable[str] | None) -> Set[str] | None:
-    """Return a set of elements, or None when no restriction is specified."""
+    """Normalize element symbols and return a unique set.
+
+    Args:
+        elements: Iterable of raw element symbols; ``None`` means no constraint.
+
+    Returns:
+        A set of cleaned element symbols, or ``None`` when ``elements`` is falsy.
+
+    Raises:
+        ValueError: If an element entry is empty or not recognized.
+    """
     if not elements:
         return None
     normalized: Set[str] = set()
@@ -63,14 +95,26 @@ def _normalize_element_list(elements: Iterable[str] | None) -> Set[str] | None:
 
 
 def has_product(record: ReactionRecord) -> bool:
-    """
-    keep reactions have at least one product
+    """Check whether the reaction contains at least one product molecule.
+
+    Args:
+        record: Reaction to evaluate.
+
+    Returns:
+        True when at least one product SMILES is present.
     """
     return len(record.products) > 0
 
 
 def all_molecules_valid(record: ReactionRecord) -> bool:
-    """ """
+    """Verify that all reaction molecules are valid SMILES.
+
+    Args:
+        record: Reaction to evaluate.
+
+    Returns:
+        True when every reactant, reagent, and product SMILES parses in RDKit.
+    """
     for s in _iter_all_smiles(record):
         if not _is_valid_smiles(s):
             return False
@@ -81,11 +125,24 @@ def all_molecules_valid(record: ReactionRecord) -> bool:
 
 
 def max_smiles_length(max_len: int) -> ReactionFilter:
-    """
-    Ignore the molecule if its SMILES exceeds max_len
+    """Build a filter that enforces a maximum SMILES length.
+
+    Args:
+        max_len: Maximum allowed character length for any SMILES string.
+
+    Returns:
+        ReactionFilter predicate that rejects reactions containing longer SMILES.
     """
 
     def _filter(record: ReactionRecord) -> bool:
+        """Return True when all SMILES strings are within the length limit.
+
+        Args:
+            record: Reaction to evaluate.
+
+        Returns:
+            True if every SMILES length is less than or equal to ``max_len``.
+        """
         for s in _iter_all_smiles(record):
             if len(s) > max_len:
                 return False
@@ -99,15 +156,24 @@ def element_filter(
     allowList: ElementFilterRule | None = None,
     forbidList: ElementFilterRule | None = None,
 ) -> ReactionFilter:
-    """
-    Build a ReactionFilter that enforces per-role element rules.
+    """Build a ReactionFilter enforcing per-role element rules.
 
-    For each reactant, reagent, and product molecule, the generated filter
-    ensures: (1) the SMILES string is parseable by RDKit, (2) every atom's
-    symbol appears in the corresponding `allowList` set (when provided), and (3)
-    no atom's symbol appears in the matching `forbidList` set (when provided).
-    The reaction is rejected as soon as any molecule violates those
-    constraints. Omitting either rule disables that portion of the filter.
+    For each reactant, reagent, and product molecule, the generated filter:
+    1) parses the SMILES with RDKit, 2) checks membership in ``allowList`` when
+    provided, and 3) rejects any atom that appears in ``forbidList``.
+    Constraints are evaluated per role; missing rules skip that check.
+
+    Args:
+        allowList: Allowed element symbols for each role. ``None`` disables
+            allow-list filtering.
+        forbidList: Forbidden element symbols for each role. ``None`` disables
+            forbid-list filtering.
+
+    Returns:
+        ReactionFilter predicate implementing the configured constraints.
+
+    Raises:
+        ValueError: If element symbols are empty or invalid.
     """
 
     allowed_reactants = _normalize_element_list(
@@ -135,6 +201,16 @@ def element_filter(
         allowed: Set[str] | None,
         forbidden: Set[str] | None,
     ) -> bool:
+        """Validate molecules against allowed/forbidden element sets.
+
+        Args:
+            smiles_list: SMILES strings to validate.
+            allowed: Elements permitted for the given role, or ``None`` to skip.
+            forbidden: Elements to reject for the given role, or ``None`` to skip.
+
+        Returns:
+            True if all molecules satisfy both element constraints.
+        """
         for smile in smiles_list:
             mol = Chem.MolFromSmiles(smile)
             if mol is None:
@@ -162,13 +238,25 @@ def element_filter(
 
 
 def meta_filter(predicate: Callable[[Dict[str, Any]], bool]) -> ReactionFilter:
-    """
-    Return a ReactionFilter that evaluates the provided predicate against the
-    record metadata (stored in extra_metadata). Reactions with no metadata
-    default to an empty dict.
+    """Create a filter that tests metadata via a user predicate.
+
+    Args:
+        predicate: Callable that receives ``extra_metadata`` and returns True to
+            keep the reaction or False to drop it.
+
+    Returns:
+        ReactionFilter wrapping the predicate.
     """
 
     def _filter(record: ReactionRecord) -> bool:
+        """Return True when the predicate accepts the record metadata.
+
+        Args:
+            record: Reaction to evaluate.
+
+        Returns:
+            Result of the predicate; False when the predicate raises.
+        """
         meta = record.extra_metadata or {}
         try:
             return predicate(meta)
@@ -185,10 +273,13 @@ def meta_filter(predicate: Callable[[Dict[str, Any]], bool]) -> ReactionFilter:
 
 
 def default_filters() -> List[ReactionFilter]:
-    """
-    return a default list of filters
-    1. the reaction should contain at least one product
-    2. all reactants and products should be valid
+    """Return the default list of reaction filters.
+
+    The defaults ensure at least one product is present and that all SMILES
+    strings are valid RDKit molecules.
+
+    Returns:
+        List of basic ReactionFilter callables.
     """
     return [
         has_product,

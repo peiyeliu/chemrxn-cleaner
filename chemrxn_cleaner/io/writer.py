@@ -15,6 +15,14 @@ logger = logging.getLogger(__name__)
 
 
 def _ensure_path(path: str | Path) -> Path:
+    """Convert a string or Path-like object into a ``Path`` instance.
+
+    Args:
+        path: Target filesystem path.
+
+    Returns:
+        Normalized ``Path`` object.
+    """
     return path if isinstance(path, Path) else Path(path)
 
 
@@ -24,7 +32,13 @@ def export_reaction_records_to_json(
     *,
     indent: int = 2,
 ) -> None:
-    """Write the provided reactions to ``path`` as a JSON list."""
+    """Write the provided reactions to ``path`` as a JSON list.
+
+    Args:
+        records: Reaction records to serialize.
+        path: Destination path for the JSON file.
+        indent: Indentation level for ``json.dump``.
+    """
     out_path = _ensure_path(path)
     payload = [record.to_dict() for record in records]
     logger.info("Exporting %d reactions to JSON at %s", len(records), out_path)
@@ -36,7 +50,12 @@ def export_reaction_records_to_csv(
     records: Sequence[ReactionRecord],
     path: str | Path,
 ) -> None:
-    """Write reactions to ``path`` in CSV format."""
+    """Write reactions to ``path`` in CSV format.
+
+    Args:
+        records: Reaction records to export.
+        path: Destination path for the CSV file.
+    """
     out_path = _ensure_path(path)
     fieldnames = [
         "reaction_smiles",

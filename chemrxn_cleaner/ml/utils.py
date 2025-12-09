@@ -11,11 +11,14 @@ from chemrxn_cleaner.types import ReactionRecord
 
 
 def records_to_dataframe(records: Iterable[ReactionRecord]) -> pd.DataFrame:
-    """
-    Convert a list of ReactionRecord objects into a pandas.DataFrame.
+    """Convert reaction records into a ``pandas.DataFrame``.
 
-    - Keeps all fields (including extra_* dicts) by flattening dataclasses.
-    - Good for quick EDA / exporting cleaned data.
+    Args:
+        records: Iterable of ``ReactionRecord`` instances.
+
+    Returns:
+        DataFrame containing flattened record fields; list fields are joined
+        with ``" | "`` separators for readability.
     """
     rows = []
     for r in records:
@@ -34,9 +37,16 @@ def train_valid_test_split(
     valid_ratio: float = 0.1,
     seed: int = 0,
 ) -> Tuple[List[ReactionRecord], List[ReactionRecord], List[ReactionRecord]]:
-    """
-    Simple random split. You can later replace this with
-    scaffold- / time-based splitting but keep the same interface.
+    """Randomly split records into train/valid/test partitions.
+
+    Args:
+        records: Dataset to split.
+        train_ratio: Fraction of examples allocated to the training set.
+        valid_ratio: Fraction allocated to the validation set.
+        seed: Random seed for deterministic shuffling.
+
+    Returns:
+        Tuple of ``(train, valid, test)`` record lists.
     """
     rng = random.Random(seed)
     idxs = list(range(len(records)))
@@ -51,6 +61,15 @@ def train_valid_test_split(
     test_idx = idxs[n_train + n_valid :]
 
     def pick(idxs_):
+        """Select records by shuffled indices.
+
+        Args:
+            idxs_: Indices to extract from the records list.
+
+        Returns:
+            Ordered list of ``ReactionRecord`` instances corresponding to
+            ``idxs_``.
+        """
         return [records[i] for i in idxs_]
 
     return pick(train_idx), pick(valid_idx), pick(test_idx)

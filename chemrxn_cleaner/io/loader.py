@@ -25,20 +25,17 @@ def load_uspto(
     path: str,
     keep_meta: bool = False,
 ) -> List[ReactionRecord]:
-    """
-    Load a USPTO .rsmi file.
+    """Load a USPTO ``.rsmi`` file.
 
-    Typical format:
-        reaction_smiles[\\t extra_field1 \\t extra_field2 ...]
+    The expected format is ``reaction_smiles[\\t extra_field1 \\t extra_field2 ...]``.
 
     Args:
-        path: Path to .rsmi file.
-        keep_meta:
-            - False: return List[ReactionRecord]
-            - True:  return List[ReactionRecord] with extra_metadata["fields"] set
+        path: Path to the ``.rsmi`` file.
+        keep_meta: When True, store trailing tab-separated fields under
+            ``extra_metadata['fields']``.
 
     Returns:
-        List[ReactionRecord]
+        Parsed reaction records derived from the file.
     """
     reactions: List[ReactionRecord] = []
 
@@ -75,20 +72,21 @@ def load_ord(
     canonical: bool = True,
     meta_extractor: Optional[Callable[[dataset_pb2.Reaction], Dict[str, Any]]] = None,
 ) -> List[ReactionRecord]:
-    """
-    Load an ORD *.pb or *.pb.gz file and extract reaction SMILES.
+    """Load an ORD ``*.pb`` or ``*.pb.gz`` file and extract reaction SMILES.
 
     Args:
-        path: Path to the ORD dataset file (e.g. 'data-00001.pb.gz').
-        generate_if_missing:
-            If True, generate reaction SMILES from inputs/outcomes when missing.
-        allow_incomplete:
-            If True, allow reactions with incomplete information when generating SMILES.
-        canonical:
-            If True, return canonical reaction SMILES.
+        path: Path to the ORD dataset file (e.g., ``data-00001.pb.gz``).
+        generate_if_missing: Generate reaction SMILES from inputs/outcomes when
+            missing.
+        allow_incomplete: Permit reactions with incomplete information when
+            generating SMILES.
+        canonical: Return canonical reaction SMILES when True.
+        meta_extractor: Optional callable that produces extra metadata per
+            reaction.
 
     Returns:
-        A list of ReactionRecord objects with metadata + basic conditions populated.
+        Reaction records populated with parsed SMILES, metadata, and basic
+        experimental conditions.
     """
     logger.info(
         "Loading ORD dataset from %s (generate_if_missing=%s, allow_incomplete=%s, "
@@ -102,6 +100,14 @@ def load_ord(
     rxn_records: List[ReactionRecord] = []
 
     def _coerce_float(value: Any) -> Optional[float]:
+        """Convert numeric-like objects to floats when possible.
+
+        Args:
+            value: Input value that may encode a numeric measurement.
+
+        Returns:
+            Parsed float value or ``None`` when conversion is not possible.
+        """
         if value is None:
             return None
         if isinstance(value, (int, float)):
@@ -120,6 +126,14 @@ def load_ord(
     def _extract_conditions(
         reaction: dataset_pb2.Reaction,
     ) -> Dict[str, Any]:
+        """Extract a subset of reaction conditions from a protobuf reaction.
+
+        Args:
+            reaction: ORD reaction message.
+
+        Returns:
+            Dictionary containing standardized condition fields.
+        """
         try:
             flat = message_to_row(reaction)
         except Exception:
@@ -165,6 +179,15 @@ def load_ord(
     def _extract_primary_yield(
         reaction: dataset_pb2.Reaction,
     ) -> Tuple[Optional[float], YieldType]:
+        """Find the highest available yield and its type for a reaction.
+
+        Args:
+            reaction: ORD reaction message.
+
+        Returns:
+            Tuple of ``(yield_value, yield_type)`` where ``yield_value`` is
+            ``None`` when no yield is available.
+        """
         best_yield: Optional[float] = None
         for outcome in getattr(reaction, "outcomes", []):
             for product in getattr(outcome, "products", []):
@@ -182,6 +205,14 @@ def load_ord(
         return best_yield, YieldType.OTHER
 
     def _extract_source_ref(reaction: dataset_pb2.Reaction) -> Optional[str]:
+        """Return a preferred provenance reference such as DOI or patent.
+
+        Args:
+            reaction: ORD reaction message.
+
+        Returns:
+            First available reference string, or ``None`` when absent.
+        """
         provenance = getattr(reaction, "provenance", None)
         if provenance is None:
             return None
@@ -195,6 +226,14 @@ def load_ord(
     def _extract_procedure(
         reaction: reaction_pb2.Reaction,
     ) -> Dict[str, Any]:
+        """Collect flattened procedure-related fields for a reaction.
+
+        Args:
+            reaction: ORD reaction message.
+
+        Returns:
+            Dictionary containing only procedure-related keys.
+        """
         flat: Dict[str, Any] = message_to_row(reaction)
         procedure_prefixes = (
             "setup.",
@@ -274,29 +313,27 @@ def load_csv(
         Callable[[ReactionRecord, Dict[str, Any]], Optional[ReactionRecord]]
     ] = None,
 ) -> List[ReactionRecord]:
-    """
-    Load ReactionRecord objects assembled from CSV columns.
+    """Load ReactionRecord objects assembled from CSV columns.
 
     Args:
         path: Path to the CSV file.
         reactant_columns: Column names that contain reactant SMILES.
         product_columns: Column names that contain product SMILES.
         reagent_columns: Optional column names that contain reagent SMILES.
-        reaction_smiles_column:
-            Optional column containing full reaction SMILES. If provided,
-            reactant/product/reagent columns are ignored.
-        delimiter: CSV delimiter (default ',').
+        reaction_smiles_column: Column containing full reaction SMILES; when
+            provided, component columns are ignored.
+        delimiter: CSV delimiter character.
         skip_lines: Number of initial lines to skip before reading the header.
-        mapper:
-            Optional callable that receives the base ReactionRecord (parsed from the
-            assembled reaction SMILES) and the raw row dictionary. It should return
-            a ReactionRecord (possibly modified) or None to skip the row.
+        mapper: Optional callable that receives the parsed ReactionRecord and
+            raw row dictionary. It may return a modified record or ``None`` to
+            skip the row.
 
     Returns:
-        List[ReactionRecord].
+        Parsed reaction records derived from the CSV rows.
 
     Raises:
-        ValueError if required columns are missing.
+        ValueError: If required columns are missing or the mapper returns
+            invalid data.
     """
 
     if skip_lines < 0:
@@ -305,12 +342,34 @@ def load_csv(
     def _normalize_columns(
         name: str, cols: Optional[Sequence[str]], allow_empty: bool = False
     ) -> List[str]:
+        """Validate and coerce a sequence of column names to strings.
+
+        Args:
+            name: Human-readable label for the columns being normalized.
+            cols: Column names to normalize.
+            allow_empty: Whether an empty list is permitted.
+
+        Returns:
+            Normalized list of column name strings.
+
+        Raises:
+            ValueError: If ``allow_empty`` is False and no columns are provided.
+        """
         normalized = [str(col) for col in cols] if cols else []
         if not normalized and not allow_empty:
             raise ValueError(f"{name} must contain at least one column name.")
         return normalized
 
     def _join_smiles(row: Dict[str, Any], columns: List[str]) -> str:
+        """Join SMILES fragments from selected columns with dots.
+
+        Args:
+            row: CSV row dictionary.
+            columns: Ordered column names to collect SMILES fragments from.
+
+        Returns:
+            Dot-joined SMILES string (may be empty).
+        """
         values: List[str] = []
         for col in columns:
             cell = row.get(col, "")
@@ -409,12 +468,19 @@ def load_json(
     path: str,
     mapper: Callable[[Any], Optional[ReactionRecord]],
 ) -> List[ReactionRecord]:
-    """
-    Load ReactionRecord instances from a JSON file using a user-provided mapper.
+    """Load ReactionRecord instances from a JSON list payload.
 
-    The JSON payload is expected to be a list; each entry is passed to
-    ``mapper`` which should return a populated ``ReactionRecord`` or ``None``
-    to skip the entry.
+    Args:
+        path: Path to the JSON file containing a list payload.
+        mapper: Callable that converts each list item into a ``ReactionRecord``
+            or ``None`` to skip it.
+
+    Returns:
+        Reaction records produced by the mapper.
+
+    Raises:
+        ValueError: If the payload is not a list, the mapper returns invalid
+            data, or a record is missing ``reaction_smiles``.
     """
     logger.info("Loading JSON reactions from %s", path)
     with open(path, "r", encoding="utf-8") as f:
