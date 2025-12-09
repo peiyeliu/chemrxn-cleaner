@@ -80,7 +80,6 @@ The package includes:
   - `element_filter`
   - `meta_filter`
   - RDKit-based `similarity_filter`
-- The `basic_cleaning_pipeline` for quick-start workflows.
 
 Filters are simple callables returning booleans and may be freely composed.
 

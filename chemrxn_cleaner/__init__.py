@@ -5,7 +5,6 @@ __version__ = "0.1.0"
 import logging
 
 from .cleaner import (
-    basic_cleaning_pipeline,
     clean_and_canonicalize,
     clean_reactions,
     clean_reactions_with_report,
@@ -58,7 +57,6 @@ __all__ = [
     "clean_reactions",
     "clean_reactions_with_report",
     "clean_and_canonicalize",
-    "basic_cleaning_pipeline",
     # io
     "register_input_format",
     "get_input_format",

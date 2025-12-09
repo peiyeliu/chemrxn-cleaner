@@ -14,16 +14,18 @@ pip install chemrxn-cleaner
 
 ```python
 from chemrxn_cleaner import (
-    basic_cleaning_pipeline,
+    clean_and_canonicalize,
     clean_reactions_with_report,
+    default_filters,
     export_reaction_records,
     load_reactions,
 )
 
 raw = load_reactions("data/sample.rsmi", fmt="uspto", keep_meta=True)
+filters = default_filters()
 
-cleaned = basic_cleaning_pipeline(raw)
-cleaned_with_report, stats = clean_reactions_with_report(raw)
+cleaned = clean_and_canonicalize(raw, filters=filters)
+cleaned_with_report, stats = clean_reactions_with_report(raw, filters=filters)
 print(f"Input: {stats.n_input}, output: {stats.n_output}, failed: {stats.n_failed_parse}")
 
 export_reaction_records(cleaned, "cleaned.json", fmt="json")

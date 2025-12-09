@@ -244,26 +244,3 @@ def clean_and_canonicalize(
             raise
 
     return canon_records
-
-
-def basic_cleaning_pipeline(
-    rxn_smiles_list: Iterable[ReactionRecord],
-) -> List[ReactionRecord]:
-    """Run a default cleaning + canonicalization pipeline.
-
-    Equivalent to calling ``clean_and_canonicalize`` with ``default_filters``,
-    ``drop_failed_parse=True``, ``strict=True``, and ``isomeric=True``.
-
-    Args:
-        rxn_smiles_list: Iterable of reactions to process.
-
-    Returns:
-        Canonicalized reactions that passed the default filters.
-    """
-    return clean_and_canonicalize(
-        rxn_smiles_list=rxn_smiles_list,
-        filters=default_filters(),
-        drop_failed_parse=True,
-        strict=True,
-        isomeric=True,
-    )

@@ -21,19 +21,21 @@ pip install -e .
 
 ```python
 from chemrxn_cleaner import (
-    basic_cleaning_pipeline,
+    clean_and_canonicalize,
     clean_reactions_with_report,
+    default_filters,
     export_reaction_records,
     load_reactions,
 )
 
 raw = load_reactions("data/sample.rsmi", fmt="uspto", keep_meta=True)
+filters = default_filters()
 
-cleaned = basic_cleaning_pipeline(raw)
+cleaned = clean_and_canonicalize(raw, filters=filters)
 print(f"Kept {len(cleaned)}/{len(raw)} reactions after cleaning")
 
 # Need per-filter stats? Call the reporting variant instead:
-cleaned_with_report, stats = clean_reactions_with_report(raw)
+cleaned_with_report, stats = clean_reactions_with_report(raw, filters=filters)
 print(f"Failed parses: {stats.n_failed_parse}, dropped: {stats.n_input - stats.n_output}")
 
 export_reaction_records(cleaned, "cleaned.json", fmt="json")
@@ -119,7 +121,7 @@ Use the registry-driven `load_reactions(..., fmt=...)` helper or call the indivi
 
 ## Cleaning and filters
 
-`clean_reactions` parses missing reactant/reagent/product lists, applies filters, and optionally drops failed parses. `clean_and_canonicalize` also canonicalizes every SMILES; `basic_cleaning_pipeline` wraps the default stack (`has_product`, `all_molecules_valid`, strict parsing, isomeric SMILES).
+`clean_reactions` parses missing reactant/reagent/product lists, applies filters, and optionally drops failed parses. `clean_and_canonicalize` also canonicalizes every SMILES; call it with `filters=default_filters()` for the default stack (`has_product`, `all_molecules_valid`, strict parsing, isomeric SMILES).
 
 ```python
 from chemrxn_cleaner import (
