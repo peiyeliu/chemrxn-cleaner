@@ -4,69 +4,7 @@ Lightweight helpers for parsing, cleaning, filtering, reporting, and exporting o
 
 ## Design
 
-```mermaid
----
-config:
-  layout: elk
----
-flowchart TB
-  subgraph Sources["Sources"]
-    uspto["USPTO .rsmi 
-        load_uspto"]:::sourcesNode
-    ord["ORD .pb/.pb.gz 
-        load_ord"]:::sourcesNode
-    csv["CSV 
-        load_csv"]:::sourcesNode
-    json["JSON 
-        load_json"]:::sourcesNode
-    custom["Custom format register_input_format"]:::sourcesNode
-  end
-  subgraph IO["Loader Registry"]
-    load["load_reactions(fmt=...) → 
-        ReactionRecord"]:::ioNode
-  end
-  subgraph Cleaning["Parser + Filter + Cleaner"]
-    parse["parse_reaction_smiles"]:::cleanNode
-    filterStack["ReactionFilter 
-        has_product  
-        all_molecules_valid meta_filter  
-        element_filter  
-        max_smiles_length 
-        similarity_filter 
-        ......"]:::filterStack
-    clean["clean_reactions clean_and_canonicalize"]:::cleanNode
-  end
-  subgraph Output["Output"]
-    export["export_reaction_records"]:::outputNode
-    df["records_to_dataframe"]:::outputNode
-    dataset["ForwardReactionDataset"]:::outputNode
-  end
-  uspto --> load
-  ord --> load
-  csv --> load
-  json --> load
-  custom --> load
-  load --> records[/"List[ReactionRecord]"/]:::ioNode
-  records --> parse
-  parse --> clean
-  filterStack -.-> clean
-  clean --> cleaned[/"Cleaned ReactionRecords"/]:::cleanNode & stats["CleaningStats + FilterStats"]:::cleanNode
-  cleaned --> export & df
-  df --> dataset
-
-  %% Highlight subgraphs/blocks
-  style Sources fill:#E3F2FD,stroke:#0277BD,stroke-width:2px
-  style IO fill:#F1F8E9,stroke:#689F38,stroke-width:2px
-  style Cleaning fill:#FFF8E1,stroke:#FFC107,stroke-width:2px
-  style Output fill:#FFEBEE,stroke:#D32F2F,stroke-width:2px
-
-  %% Individual node color
-  classDef sourcesNode fill:#90CAF9,stroke:#1565C0,color:#08306b;
-  classDef ioNode fill:#AED581,stroke:#33691E,color:#1B5E20;
-  classDef cleanNode fill:#FFE082,stroke:#FFB300,color:#795548;
-  classDef filterStack fill:#C8E6C9,stroke:#388E3C,color:#1B5E20;
-  classDef outputNode fill:#FFCDD2,stroke:#C62828,color:#B71C1C;
-```
+![Chemrxn-cleaner design overview](docs/chemrxn-cleaner.png)
 
 
 ## Installation
@@ -271,3 +209,6 @@ example = dataset[0]
 ## Examples
 
 An interactive walkthrough lives at `examples/example.ipynb`. It demonstrates loading ORD, USPTO, JSON, and CSV datasets, applying filter stacks (including similarity filtering), and exporting cleaned reactions. Open it in Jupyter and swap in your own file paths to mirror the workflows.
+
+## API document
+https://peiyeliu.github.io/chemrxn-cleaner/
