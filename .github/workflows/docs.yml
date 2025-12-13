@@ -3,6 +3,7 @@ name: docs
 on:
   push:
     branches: [ main ]
+  pull_request:
   workflow_dispatch:
 
 permissions:
@@ -33,12 +34,17 @@ jobs:
           python -m pip install mkdocs mkdocs-material mkdocstrings[python] pymdown-extensions
           python -m pip install -e .
 
+      - name: Build docs (CI check)
+        run: python -m mkdocs build --strict
+
       - name: Configure git user
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Build and deploy docs
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
         env:
           GITHUB_TOKEN: ${{ secrets.TOKEN_GIT }}
         run: python -m mkdocs gh-deploy --force --strict
