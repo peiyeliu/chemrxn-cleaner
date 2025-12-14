@@ -51,6 +51,8 @@ export_reaction_records(cleaned, "cleaned.csv", fmt="csv")
 
 Use the registry-driven `load_reactions(..., fmt=...)` helper or call the individual loaders directly. Built-in formats are auto-registered when the package is imported.
 
+All built-in loaders accept `strip_atom_mapping=True` to remove atom-map numbers from the returned `reaction_smiles` while saving the original mapped string in `ReactionRecord.atom_mapping`.
+
 - **USPTO .rsmi** (optionally keep tab-separated metadata in `extra_metadata["fields"]`):
 
   ```python

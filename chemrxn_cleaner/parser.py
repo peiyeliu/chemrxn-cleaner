@@ -3,13 +3,17 @@
 from __future__ import annotations
 
 import logging
-from typing import Iterable, List
+import re
+from typing import Iterable, List, Optional, Tuple
 
 from rdkit import Chem
 
 from .types import ReactionRecord
 
 logger = logging.getLogger(__name__)
+
+# Regex to remove atom-map numbers inside bracketed atoms, e.g., ``[CH3:1]``.
+_ATOM_MAP_PATTERN = re.compile(r"(\[[^\[\]]*?):\d+([^\[\]]*\])")
 
 # ---------------------- basic SMILES tool functions ---------------------- #
 
@@ -77,9 +81,35 @@ def canonicalize_smiles_list(
 # ---------------------- Reaction SMILES parser ---------------------- #
 
 
+def _strip_atom_mapping_tokens(rxn_smiles: str) -> Tuple[str, Optional[str]]:
+    """Remove atom-map numbers from a reaction SMILES string.
+
+    Args:
+        rxn_smiles: Reaction SMILES that may contain atom-map numbers such as
+            ``[CH3:1]``.
+
+    Returns:
+        Tuple of ``(stripped_smiles, original_if_stripped)`` where the second
+        element is ``None`` when no atom-maps were removed.
+    """
+
+    original = rxn_smiles
+    updated = rxn_smiles
+    while True:
+        stripped = _ATOM_MAP_PATTERN.sub(r"\1\2", updated)
+        if stripped == updated:
+            break
+        updated = stripped
+
+    if updated == original:
+        return updated, None
+    return updated, original
+
+
 def parse_reaction_smiles(
     rxn_smiles: str,
     strict: bool = True,
+    strip_atom_mapping: bool = False,
 ) -> ReactionRecord:
     """Parse a reaction SMILES string into a ``ReactionRecord``.
 
@@ -90,6 +120,8 @@ def parse_reaction_smiles(
     Args:
         rxn_smiles: Raw reaction SMILES string to parse.
         strict: Enforce exactly three ``>``-separated parts when True.
+        strip_atom_mapping: When True, remove atom-map numbers and store the
+            original mapped string in ``atom_mapping``.
 
     Returns:
         ReactionRecord with parsed reactants, reagents, and products lists.
@@ -102,7 +134,13 @@ def parse_reaction_smiles(
         logger.error("rxn_smiles cannot be None.")
         raise ValueError("rxn_smiles cannot be None.")
 
-    parts = rxn_smiles.strip().split(">")
+    rxn_smiles = rxn_smiles.strip()
+
+    atom_mapping: Optional[str] = None
+    if strip_atom_mapping:
+        rxn_smiles, atom_mapping = _strip_atom_mapping_tokens(rxn_smiles)
+
+    parts = rxn_smiles.split(">")
     if len(parts) != 3:
         if strict:
             logger.error("Invalid reaction SMILES format: %r", rxn_smiles)
@@ -122,6 +160,7 @@ def parse_reaction_smiles(
         reactants=reactants,
         reagents=reagents,
         products=products,
+        atom_mapping=atom_mapping,
     )
 
 

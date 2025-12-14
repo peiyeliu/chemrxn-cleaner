@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 def load_uspto(
     path: str,
     keep_meta: bool = False,
+    strip_atom_mapping: bool = False,
 ) -> List[ReactionRecord]:
     """Load a USPTO ``.rsmi`` file.
 
@@ -33,6 +34,9 @@ def load_uspto(
         path: Path to the ``.rsmi`` file.
         keep_meta: When True, store trailing tab-separated fields under
             ``extra_metadata['fields']``.
+        strip_atom_mapping: When True, remove atom-map numbers from input
+            reaction SMILES and store the original mapped string in
+            ``atom_mapping``.
 
     Returns:
         Parsed reaction records derived from the file.
@@ -51,8 +55,9 @@ def load_uspto(
             if not rxn_smiles:
                 continue
 
-            record = parse_reaction_smiles(rxn_smiles, strict=False)
-            record.reaction_smiles = rxn_smiles
+            record = parse_reaction_smiles(
+                rxn_smiles, strict=False, strip_atom_mapping=strip_atom_mapping
+            )
             record.source = "uspto"
             record.source_file_path = path
 
@@ -71,6 +76,7 @@ def load_ord(
     allow_incomplete: bool = True,
     canonical: bool = True,
     meta_extractor: Optional[Callable[[dataset_pb2.Reaction], Dict[str, Any]]] = None,
+    strip_atom_mapping: bool = False,
 ) -> List[ReactionRecord]:
     """Load an ORD ``*.pb`` or ``*.pb.gz`` file and extract reaction SMILES.
 
@@ -83,6 +89,9 @@ def load_ord(
         canonical: Return canonical reaction SMILES when True.
         meta_extractor: Optional callable that produces extra metadata per
             reaction.
+        strip_atom_mapping: When True, remove atom-map numbers from input
+            reaction SMILES and store the original mapped string in
+            ``atom_mapping``.
 
     Returns:
         Reaction records populated with parsed SMILES, metadata, and basic
@@ -268,8 +277,9 @@ def load_ord(
             )
             raise
         if smi:
-            record = parse_reaction_smiles(smi, strict=False)
-            record.reaction_smiles = smi
+            record = parse_reaction_smiles(
+                smi, strict=False, strip_atom_mapping=strip_atom_mapping
+            )
             record.reaction_id = getattr(rxn, "reaction_id", "") or ""
             record.source = "ord"
             record.source_file_path = path
@@ -312,6 +322,7 @@ def load_csv(
     mapper: Optional[
         Callable[[ReactionRecord, Dict[str, Any]], Optional[ReactionRecord]]
     ] = None,
+    strip_atom_mapping: bool = False,
 ) -> List[ReactionRecord]:
     """Load ReactionRecord objects assembled from CSV columns.
 
@@ -327,6 +338,9 @@ def load_csv(
         mapper: Optional callable that receives the parsed ReactionRecord and
             raw row dictionary. It may return a modified record or ``None`` to
             skip the row.
+        strip_atom_mapping: When True, remove atom-map numbers from input
+            reaction SMILES and store the original mapped string in
+            ``atom_mapping``.
 
     Returns:
         Parsed reaction records derived from the CSV rows.
@@ -432,8 +446,11 @@ def load_csv(
                     continue  # skip empty rows
                 rxn_smiles = f"{reactants_block}>{reagents_block}>{products_block}"
 
-            record = parse_reaction_smiles(rxn_smiles, strict=False)
-            record.reaction_smiles = rxn_smiles
+            record = parse_reaction_smiles(
+                rxn_smiles, strict=False, strip_atom_mapping=strip_atom_mapping
+            )
+            if not strip_atom_mapping:
+                record.reaction_smiles = rxn_smiles
             if not record.source:
                 record.source = "csv"
 
@@ -467,6 +484,8 @@ def load_csv(
 def load_json(
     path: str,
     mapper: Callable[[Any], Optional[ReactionRecord]],
+    *,
+    strip_atom_mapping: bool = False,
 ) -> List[ReactionRecord]:
     """Load ReactionRecord instances from a JSON list payload.
 
@@ -474,6 +493,9 @@ def load_json(
         path: Path to the JSON file containing a list payload.
         mapper: Callable that converts each list item into a ``ReactionRecord``
             or ``None`` to skip it.
+        strip_atom_mapping: When True, remove atom-map numbers from mapper-
+            returned reaction SMILES and store the original mapped string in
+            ``atom_mapping``.
 
     Returns:
         Reaction records produced by the mapper.
@@ -490,6 +512,20 @@ def load_json(
         raise ValueError("JSON payload must be a list.")
 
     reactions: List[ReactionRecord] = []
+
+    def _strip_record(record: ReactionRecord) -> ReactionRecord:
+        if not strip_atom_mapping:
+            return record
+        parsed = parse_reaction_smiles(
+            record.reaction_smiles, strict=False, strip_atom_mapping=True
+        )
+        record.reaction_smiles = parsed.reaction_smiles
+        record.reactants = parsed.reactants
+        record.reagents = parsed.reagents
+        record.products = parsed.products
+        record.atom_mapping = parsed.atom_mapping or record.atom_mapping
+        return record
+
     for idx, item in enumerate(payload):
         record = mapper(item)
         if record is None:
@@ -507,6 +543,7 @@ def load_json(
                 f"Mapper must set a non-empty reaction_smiles at index {idx}"
             )
         record.reaction_smiles = record.reaction_smiles.strip()
+        record = _strip_record(record)
         reactions.append(record)
 
     logger.info("Loaded %d reactions from JSON %s", len(reactions), path)

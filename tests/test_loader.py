@@ -188,6 +188,51 @@ def test_load_json_with_mapper(tmp_path):
     assert reactions[0].source == "json"
 
 
+def test_load_csv_strip_atom_mapping(tmp_path):
+    data = "rxn_smiles\n[CH3:1].[OH-:2]>[Na+]>[CH3OH:1]\n"
+    path = tmp_path / "rxn_map.csv"
+    path.write_text(data, encoding="utf-8")
+
+    reactions = loader.load_csv(
+        str(path),
+        reaction_smiles_column="rxn_smiles",
+        strip_atom_mapping=True,
+    )
+
+    assert len(reactions) == 1
+    rec = reactions[0]
+    assert rec.reaction_smiles == "[CH3].[OH-]>[Na+]>[CH3OH]"
+    assert rec.reactants == ["[CH3]", "[OH-]"]
+    assert rec.reagents == ["[Na+]"]
+    assert rec.products == ["[CH3OH]"]
+    assert rec.atom_mapping == "[CH3:1].[OH-:2]>[Na+]>[CH3OH:1]"
+
+
+def test_load_json_strip_atom_mapping(tmp_path):
+    payload = [{"rxn": "[CH3:1].[OH-:2]>>[CH3OH:1]", "tag": "mapped"}]
+    path = tmp_path / "rxn_map.json"
+    path.write_text(json.dumps(payload), encoding="utf-8")
+
+    def mapper(entry):
+        return ReactionRecord(
+            reaction_smiles=entry["rxn"],
+            extra_metadata={"tag": entry["tag"]},
+            source="json",
+        )
+
+    reactions = loader.load_json(str(path), mapper, strip_atom_mapping=True)
+
+    assert len(reactions) == 1
+    rec = reactions[0]
+    assert rec.reaction_smiles == "[CH3].[OH-]>>[CH3OH]"
+    assert rec.reactants == ["[CH3]", "[OH-]"]
+    assert rec.reagents == []
+    assert rec.products == ["[CH3OH]"]
+    assert rec.atom_mapping == "[CH3:1].[OH-:2]>>[CH3OH:1]"
+    assert rec.extra_metadata["tag"] == "mapped"
+    assert rec.source == "json"
+
+
 def test_load_ord_returns_meta(monkeypatch):
     class DummyProduct:
         def __init__(self, yield_value: float | None):

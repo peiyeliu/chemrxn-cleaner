@@ -111,7 +111,11 @@ def get_input_format(name: str) -> InputLoader:
 
 @overload
 def load_reactions(
-    source: str, *, fmt: Literal["uspto"], keep_meta: bool = False
+    source: str,
+    *,
+    fmt: Literal["uspto"],
+    keep_meta: bool = False,
+    strip_atom_mapping: bool = False,
 ) -> List[ReactionRecord]: ...
 
 
@@ -124,6 +128,7 @@ def load_reactions(
     allow_incomplete: bool = True,
     canonical: bool = True,
     meta_extractor: Optional[Callable[[Any], Dict[str, Any]]] = None,
+    strip_atom_mapping: bool = False,
 ) -> List[ReactionRecord]: ...
 
 
@@ -141,6 +146,7 @@ def load_reactions(
     mapper: Optional[
         Callable[[ReactionRecord, Dict[str, Any]], Optional[ReactionRecord]]
     ] = None,
+    strip_atom_mapping: bool = False,
 ) -> List[ReactionRecord]: ...
 
 
@@ -150,6 +156,7 @@ def load_reactions(
     *,
     fmt: Literal["json"],
     mapper: Callable[[Any], Optional[ReactionRecord]],
+    strip_atom_mapping: bool = False,
 ) -> List[ReactionRecord]: ...
 
 
