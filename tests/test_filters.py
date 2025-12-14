@@ -1,6 +1,11 @@
 import pytest
 
-from chemrxn_cleaner.filters import ElementFilterRule, element_filter, meta_filter
+from chemrxn_cleaner.filters import (
+    ElementFilterRule,
+    all_molecules_valid,
+    element_filter,
+    meta_filter,
+)
 from chemrxn_cleaner.types import ReactionRecord
 
 
@@ -11,6 +16,15 @@ def _record_with_meta(meta):
         reagents=["[H+].[Cl-].OCC"],
         products=["CC(=O)OCC"],
         extra_metadata=meta,
+    )
+
+
+def _record_no_reagent():
+    return ReactionRecord(
+        reaction_smiles="CC(=O)O.OCC>>CC(=O)OCC",
+        reactants=["CC(=O)O.OCC"],
+        reagents=[],
+        products=["CC(=O)OCC"],
     )
 
 
@@ -51,3 +65,8 @@ def test_element_filter_rejects_invalid_symbols():
             allowList=ElementFilterRule(["Xx"], [], []),
             forbidList=None,
         )
+
+
+def test_no_reagent():
+    filter = all_molecules_valid
+    assert filter(_record_no_reagent()) is True

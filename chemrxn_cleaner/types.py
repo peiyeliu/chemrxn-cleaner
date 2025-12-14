@@ -203,6 +203,29 @@ class ReactionRecord:
             extra_metadata=cls._merge_extra_metadata(data),
         )
 
+    @classmethod
+    def _merge_extra_metadata(cls, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Combine explicit extra metadata with any unknown top-level keys."""
+        base_meta = data.get("extra_metadata") or {}
+        if isinstance(base_meta, dict):
+            extra_meta = dict(base_meta)
+        else:
+            try:
+                extra_meta = dict(base_meta)
+            except Exception:
+                extra_meta = {}
+
+        meta_alias = data.get("meta")
+        if isinstance(meta_alias, dict):
+            extra_meta.update(meta_alias)
+
+        known_keys = set(cls.__dataclass_fields__.keys()) | {"meta"}
+        for key, value in data.items():
+            if key not in known_keys and key not in extra_meta:
+                extra_meta[key] = value
+
+        return extra_meta
+
     def __post_init__(self) -> None:
         """Ensure optional mapping fields default to empty dictionaries."""
         if self.extra_metadata is None:
