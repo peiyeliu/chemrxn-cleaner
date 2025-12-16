@@ -3077,8 +3077,8 @@ depiction; when False, they are stripped before drawing.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional list of filter predicates; falls back to
-<code>default_filters()</code> when None.</p>
+                <p>Optional list of filter predicates. When None, no filters are
+run; pass <code>default_filters()</code> to apply the recommended stack.</p>
               </div>
             </td>
             <td>
@@ -3219,8 +3219,8 @@ than raising.</p>
 
 <span class="sd">    Args:</span>
 <span class="sd">        rxn_smiles_list: Iterable of ReactionRecords to clean.</span>
-<span class="sd">        filters: Optional list of filter predicates; falls back to</span>
-<span class="sd">            ``default_filters()`` when None.</span>
+<span class="sd">        filters: Optional list of filter predicates. When None, no filters are</span>
+<span class="sd">            run; pass ``default_filters()`` to apply the recommended stack.</span>
 <span class="sd">        drop_failed_parse: Whether to drop reactions that fail parsing rather</span>
 <span class="sd">            than raising.</span>
 <span class="sd">        strict: Enforce exactly three ``&gt;`` parts in reaction SMILES when True.</span>
@@ -3313,8 +3313,8 @@ fields are parsed from <code>reaction_smiles</code> when present.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional list of predicate callables; defaults to
-<code>default_filters()</code> when omitted.</p>
+                <p>Optional list of predicate callables. When omitted, no filters
+are applied; pass <code>default_filters()</code> for the recommended stack.</p>
               </div>
             </td>
             <td>
@@ -3428,8 +3428,8 @@ when True, otherwise pads missing parts.</p>
 <span class="sd">    Args:</span>
 <span class="sd">        rxn_smiles_list: Iterable of reactions. Empty reactant/reagent/product</span>
 <span class="sd">            fields are parsed from ``reaction_smiles`` when present.</span>
-<span class="sd">        filters: Optional list of predicate callables; defaults to</span>
-<span class="sd">            ``default_filters()`` when omitted.</span>
+<span class="sd">        filters: Optional list of predicate callables. When omitted, no filters</span>
+<span class="sd">            are applied; pass ``default_filters()`` for the recommended stack.</span>
 <span class="sd">        drop_failed_parse: When True, quietly drop reactions that cannot be</span>
 <span class="sd">            parsed; when False, propagate the parsing error.</span>
 <span class="sd">        strict: Passed to ``parse_reaction_smiles``; enforces three &#39;&gt;&#39; parts</span>
@@ -3509,8 +3509,8 @@ when True, otherwise pads missing parts.</p>
             </td>
             <td>
               <div class="doc-md-description">
-                <p>Optional list of filters to apply; defaults to
-<code>default_filters()</code> when omitted.</p>
+                <p>Optional list of filters to apply. When omitted, no filters
+are applied; use <code>default_filters()</code> for the recommended set.</p>
               </div>
             </td>
             <td>
@@ -3624,8 +3624,8 @@ instead of raising.</p>
 
 <span class="sd">    Args:</span>
 <span class="sd">        rxn_smiles_list: Iterable of input reactions to process.</span>
-<span class="sd">        filters: Optional list of filters to apply; defaults to</span>
-<span class="sd">            ``default_filters()`` when omitted.</span>
+<span class="sd">        filters: Optional list of filters to apply. When omitted, no filters</span>
+<span class="sd">            are applied; use ``default_filters()`` for the recommended set.</span>
 <span class="sd">        drop_failed_parse: Whether to drop reactions that cannot be parsed</span>
 <span class="sd">            instead of raising.</span>
 <span class="sd">        strict: When True, require reaction SMILES to contain three sections.</span>
