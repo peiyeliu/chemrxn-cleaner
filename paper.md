@@ -112,12 +112,14 @@ For rapid experimentation, the package includes:
 from chemrxn_cleaner import (
     load_reactions,
     clean_reactions_with_report,
+    default_filters,
     export_reaction_records,
 )
 
 raw = load_reactions("data/sample.rsmi", fmt="uspto", keep_meta=True)
+filters = default_filters()
 
-cleaned, stats = clean_reactions_with_report(raw)
+cleaned, stats = clean_reactions_with_report(raw, filters=filters)
 print(f"Kept {stats.n_output}/{stats.n_input} reactions after cleaning")
 
 export_reaction_records(cleaned, "cleaned.json", fmt="json")

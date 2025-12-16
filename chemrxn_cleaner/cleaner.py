@@ -5,7 +5,7 @@ from __future__ import annotations
 import logging
 from typing import Iterable, List, Optional, Tuple
 
-from .filters import ReactionFilter, default_filters
+from .filters import ReactionFilter
 from .parser import canonicalize_reaction, parse_reaction_smiles
 from .reporter import CleaningStats, FilterStats
 from .types import ReactionRecord
@@ -51,8 +51,9 @@ def _clean_reactions_internal(
 
     Args:
         rxn_smiles_list: Incoming iterable of reaction records to clean.
-        filters: Optional list of ReactionFilter callables to apply; defaults to
-            ``default_filters`` when ``None``.
+        filters: Optional list of ReactionFilter callables to apply. When
+            ``None``, no filters are executed; pass ``default_filters()`` to
+            apply the recommended stack.
         drop_failed_parse: Whether to drop reactions that fail SMILES parsing
             instead of propagating the error.
         strict: When True, enforce three '>' parts during SMILES parsing.
@@ -66,8 +67,7 @@ def _clean_reactions_internal(
         Exception: Propagates parsing or canonicalization errors when
             ``drop_failed_parse`` is False.
     """
-    if filters is None:
-        filters = default_filters()
+    filters = [] if filters is None else list(filters)
 
     logger.info(
         "Starting cleaning pipeline (drop_failed_parse=%s, strict=%s, filters=%d)",
@@ -155,8 +155,8 @@ def clean_reactions(
     Args:
         rxn_smiles_list: Iterable of reactions. Empty reactant/reagent/product
             fields are parsed from ``reaction_smiles`` when present.
-        filters: Optional list of predicate callables; defaults to
-            ``default_filters()`` when omitted.
+        filters: Optional list of predicate callables. When omitted, no filters
+            are applied; pass ``default_filters()`` for the recommended stack.
         drop_failed_parse: When True, quietly drop reactions that cannot be
             parsed; when False, propagate the parsing error.
         strict: Passed to ``parse_reaction_smiles``; enforces three '>' parts
@@ -185,8 +185,8 @@ def clean_reactions_with_report(
 
     Args:
         rxn_smiles_list: Iterable of input reactions to process.
-        filters: Optional list of filters to apply; defaults to
-            ``default_filters()`` when omitted.
+        filters: Optional list of filters to apply. When omitted, no filters
+            are applied; use ``default_filters()`` for the recommended set.
         drop_failed_parse: Whether to drop reactions that cannot be parsed
             instead of raising.
         strict: When True, require reaction SMILES to contain three sections.
@@ -214,8 +214,8 @@ def clean_and_canonicalize(
 
     Args:
         rxn_smiles_list: Iterable of ReactionRecords to clean.
-        filters: Optional list of filter predicates; falls back to
-            ``default_filters()`` when None.
+        filters: Optional list of filter predicates. When None, no filters are
+            run; pass ``default_filters()`` to apply the recommended stack.
         drop_failed_parse: Whether to drop reactions that fail parsing rather
             than raising.
         strict: Enforce exactly three ``>`` parts in reaction SMILES when True.

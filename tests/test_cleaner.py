@@ -5,7 +5,7 @@ from chemrxn_cleaner.cleaner import (
     clean_reactions,
     clean_reactions_with_report,
 )
-from chemrxn_cleaner.filters import max_smiles_length
+from chemrxn_cleaner.filters import default_filters, max_smiles_length
 from chemrxn_cleaner.parser import parse_reaction_smiles
 from chemrxn_cleaner.reporter import CleaningStats, FilterStats
 from chemrxn_cleaner.types import ReactionRecord
@@ -64,7 +64,9 @@ def test_clean_reactions_with_report_tracks_stats():
         ReactionRecord(reaction_smiles="invalid-format"),
     ]
 
-    cleaned, stats = clean_reactions_with_report(rxn_smiles_list=rxns)
+    cleaned, stats = clean_reactions_with_report(
+        rxn_smiles_list=rxns, filters=default_filters()
+    )
 
     assert len(cleaned) == 1
     assert stats.n_input == 3
@@ -79,6 +81,20 @@ def test_clean_reactions_with_report_tracks_stats():
     molecules_valid_stats = stats.per_filter["all_molecules_valid"]
     assert molecules_valid_stats.applied == 1
     assert molecules_valid_stats.passed == 1
+
+
+def test_clean_reactions_with_report_skips_filters_when_none():
+    rxns = [
+        ReactionRecord(reaction_smiles="CCO>>CCO"),
+        ReactionRecord(reaction_smiles="CCO>>"),
+    ]
+
+    cleaned, stats = clean_reactions_with_report(rxn_smiles_list=rxns, filters=None)
+
+    assert len(cleaned) == 2
+    assert stats.n_input == 2
+    assert stats.n_output == 2
+    assert stats.per_filter == {}
 
 
 def test_cleaning_stats_combines_parallel_runs():

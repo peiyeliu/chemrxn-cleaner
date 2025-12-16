@@ -65,7 +65,9 @@ rxns = load_reactions("my_file.txt", fmt="myfmt")
 
 ## Cleaning and reporting
 
-Filters are plain callables. Compose the built-ins or author your own:
+Cleaning helpers only parse reactions when `filters` is `None`; use
+`default_filters()` to apply the recommended baseline. Filters are plain
+callables. Compose the built-ins or author your own:
 
 ```python
 from chemrxn_cleaner import (

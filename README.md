@@ -128,7 +128,7 @@ All built-in loaders accept `strip_atom_mapping=True` to remove atom-map numbers
 
 ## Cleaning and filters
 
-`clean_reactions` parses missing reactant/reagent/product lists, applies filters, and optionally drops failed parses. `clean_and_canonicalize` also canonicalizes every SMILES; call it with `filters=default_filters()` for the default stack (`has_product`, `all_molecules_valid`, strict parsing, isomeric SMILES).
+`clean_reactions` parses missing reactant/reagent/product lists, applies filters when provided, and optionally drops failed parses. If you omit `filters`, the function only parses reactions; pass `filters=default_filters()` for the default stack (`has_product`, `all_molecules_valid`, strict parsing, isomeric SMILES). `clean_and_canonicalize` also canonicalizes every SMILES.
 
 ```python
 from chemrxn_cleaner import (
