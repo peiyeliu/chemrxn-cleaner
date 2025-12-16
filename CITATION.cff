@@ -8,7 +8,7 @@ authors:
     email: peiyeliu.work@outlook.com
 license: MIT
 repository-code: "https://github.com/peiyeliu/chemrxn-cleaner"
-version: "0.1.0"
+version: "0.1.1"
 keywords:
   - chemistry
   - cheminformatics
